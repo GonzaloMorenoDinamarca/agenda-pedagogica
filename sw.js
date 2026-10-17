@@ -1,0 +1,68 @@
+/* Agenda Pedagógica: guarda la app completa para usarla sin conexión.
+   Con internet, la página se pide a la red (máx. 3 s) para recibir actualizaciones;
+   sin internet, todo sale del caché. Cambia CACHE en cada versión publicada. */
+var CACHE = 'agenda-v1';
+var PROPIOS = ['./', './index.html', './app.js', './estilos.css', './manifest.webmanifest', './icono.svg', './icono-maskable.svg'];
+var EXTERNOS = [
+  'https://cdn.jsdelivr.net/npm/@fontsource/atkinson-hyperlegible@5.3.0/files/atkinson-hyperlegible-latin-400-normal.woff2',
+  'https://cdn.jsdelivr.net/npm/@fontsource/atkinson-hyperlegible@5.3.0/files/atkinson-hyperlegible-latin-700-normal.woff2',
+  'https://cdn.jsdelivr.net/npm/@fontsource/zilla-slab@5.3.0/files/zilla-slab-latin-500-normal.woff2',
+  'https://cdn.jsdelivr.net/npm/@fontsource/zilla-slab@5.3.0/files/zilla-slab-latin-700-normal.woff2',
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
+];
+
+self.addEventListener('install', function (e) {
+  e.waitUntil(caches.open(CACHE).then(function (c) {
+    return c.addAll(PROPIOS).then(function () {
+      return Promise.all(EXTERNOS.map(function (u) {
+        return fetch(u, { mode: 'cors' }).then(function (r) { if (r.ok) return c.put(u, r); }).catch(function () {});
+      }));
+    });
+  }).then(function () { return self.skipWaiting(); }));
+});
+
+self.addEventListener('activate', function (e) {
+  e.waitUntil(caches.keys().then(function (ks) {
+    return Promise.all(ks.filter(function (k) { return k !== CACHE; }).map(function (k) { return caches.delete(k); }));
+  }).then(function () { return self.clients.claim(); }));
+});
+
+function conTiempo(p, ms) {
+  return new Promise(function (res, rej) {
+    var t = setTimeout(function () { rej(new Error('tiempo')); }, ms);
+    p.then(function (v) { clearTimeout(t); res(v); }, function (err) { clearTimeout(t); rej(err); });
+  });
+}
+
+self.addEventListener('fetch', function (e) {
+  var req = e.request;
+  if (req.method !== 'GET') return;
+  var url = new URL(req.url);
+  if (url.origin === 'https://cdn.jsdelivr.net' || url.origin === 'https://cdnjs.cloudflare.com') {
+    e.respondWith(caches.open(CACHE).then(function (c) {
+      return c.match(req.url).then(function (g) {
+        return g || fetch(req).then(function (r) { if (r.ok && r.type !== 'opaque') c.put(req.url, r.clone()); return r; });
+      });
+    }));
+    return;
+  }
+  if (url.origin !== self.location.origin) return;
+  if (req.mode === 'navigate') {
+    e.respondWith(caches.open(CACHE).then(function (c) {
+      return conTiempo(fetch(req), 3000).then(function (r) {
+        if (r && r.ok) c.put('./index.html', r.clone());
+        return r;
+      }).catch(function () {
+        return c.match('./index.html').then(function (g) { return g || c.match('./'); });
+      });
+    }));
+    return;
+  }
+  e.respondWith(caches.open(CACHE).then(function (c) {
+    return c.match(req, { ignoreSearch: true }).then(function (g) {
+      var red = fetch(req).then(function (r) { if (r && r.ok) c.put(req, r.clone()); return r; }).catch(function () { return g; });
+      return g || red;
+    });
+  }));
+});

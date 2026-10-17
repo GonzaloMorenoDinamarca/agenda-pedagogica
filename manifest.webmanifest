@@ -1,0 +1,16 @@
+{
+  "name": "Agenda Pedagógica",
+  "short_name": "Agenda",
+  "description": "Asistencia, notas, registro de clases, disertaciones con rúbrica y bitácora de equipos. Funciona sin internet.",
+  "lang": "es-CL",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#111111",
+  "icons": [
+    { "src": "icono.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icono-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
