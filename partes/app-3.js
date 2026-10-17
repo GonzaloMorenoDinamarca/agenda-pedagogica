@@ -160,7 +160,7 @@ function vDisConfig(d){
 }
 function vCrono(r,ev,eqId){
   var s=crono.eqId===eqId?tiempoCrono():((ev&&ev.duracionSeg)||0),corriendo=crono.inicio&&crono.eqId===eqId;
-  return '<div class="m-bloque crono" role="group" aria-label="Cronómetro"><span class="m-et">Tiempo</span><span class="m-val crono-t'+(r.minutos&&s>r.minutos*60?' pasado':'')+'" id="crono-t">'+mmss(s)+'</span><span class="crono-meta">de '+esc(r.minutos)+':00</span>'+
+  return '<div class="m-bloque crono" role="group" aria-label="Cronómetro"><span class="m-et">Tiempo</span><span class="m-val crono-t'+(r.minutos&&s>r.minutos*60?' pasado':'')+'" id="crono-t">'+(corriendo?minCrono(s):mmss(s))+'</span><span class="crono-meta">de '+esc(r.minutos)+':00'+(corriendo?' · cambia cada minuto':'')+'</span>'+
     '<button type="button" class="btn chico" data-a="crono-toggle">'+(corriendo?'Detener y registrar':(s?'Continuar':'Iniciar'))+'</button><button type="button" class="btn chico quiet" data-a="crono-reset">Reiniciar</button>'+
     (ev&&ev.duracionSeg&&!corriendo?'<span class="crono-reg">Registrado: '+mmss(ev.duracionSeg)+'</span>':'')+'</div>';
 }

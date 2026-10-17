@@ -7,6 +7,7 @@ function promNotasEst(g,sid){var c=cal(g);return promedioDe(c.columns.map(functi
 function segmento(campo,ops){return '<div class="segmento" role="group">'+ops.map(function(o){return '<button type="button" class="seg" data-a="vista" data-k="'+campo+'" data-v="'+o[0]+'" aria-pressed="'+(ui[campo]===o[0])+'">'+o[1]+'</button>';}).join('')+'</div>';}
 function vError(){return ui.formError?'<p class="form-error" role="alert">'+esc(ui.formError)+'</p>':'';}
 function vCab(){
+  if(ui.msg&&!(Date.now()<ui.msgHasta))ui.msg=null;if(ui.undo&&!(Date.now()<ui.undo.hasta))ui.undo=null;
   var pend=respaldoPendiente();
   return '<header class="cab"><div class="marca"><h1>Agenda <span>Pedagógica</span></h1><p class="sub">Liceo A-1 · Arica</p></div>'+
     '<div class="cab-der"><p class="cab-fecha">'+esc(cap(fDia(hoyISO())))+'</p><p class="guardado" id="guardado">'+esc(textoGuardado())+'</p>'+
