@@ -1,0 +1,226 @@
+function fechasAsistencia(g){return Object.keys(g.asistencia).filter(function(d){return g.asistencia[d]&&Object.keys(g.asistencia[d]).length;}).sort();}
+function cal(g){if(!g.calificaciones)g.calificaciones={columns:[],data:{}};return g.calificaciones;}
+function buscarColumna(c,name){var n=normNombre(name);return c.columns.filter(function(x){return x.name===name;})[0]||c.columns.filter(function(x){return normNombre(x.name)===n;})[0]||null;}
+function promNotasEst(g,sid){var c=cal(g);return promedioDe(c.columns.map(function(col){var v=(c.data[sid]||{})[col.id];return v!=null?v:null;}));}
+
+/* =================== Vistas: cabecera =================== */
+function segmento(campo,ops){return '<div class="segmento" role="group">'+ops.map(function(o){return '<button type="button" class="seg" data-a="vista" data-k="'+campo+'" data-v="'+o[0]+'" aria-pressed="'+(ui[campo]===o[0])+'">'+o[1]+'</button>';}).join('')+'</div>';}
+function vError(){return ui.formError?'<p class="form-error" role="alert">'+esc(ui.formError)+'</p>':'';}
+function vCab(){
+  var pend=respaldoPendiente();
+  return '<header class="cab"><div class="marca"><h1>Agenda <span>Pedagógica</span></h1><p class="sub">Liceo A-1 · Arica</p></div>'+
+    '<div class="cab-der"><p class="cab-fecha">'+esc(cap(fDia(hoyISO())))+'</p><p class="guardado" id="guardado">'+esc(textoGuardado())+'</p>'+
+    '<button type="button" class="link" data-a="tab" data-v="respaldo">'+esc(pend||'Respaldo y datos')+'</button></div></header>'+
+    '<nav class="pestanas" aria-label="Secciones">'+TABS.map(function(t){return '<button type="button" class="pest" data-a="tab" data-v="'+t[0]+'" aria-pressed="'+(ui.tab===t[0])+'">'+t[1]+'</button>';}).join('')+'</nav>'+
+    (ui.actualizacion?'<div class="deshacer"><span>Hay una versión nueva de la agenda.</span><button type="button" class="btn primary chico" data-a="recargar">Actualizar ahora</button></div>':'')+
+    (almacen.ok?'':'<p class="alerta" role="alert">Este navegador no está guardando los datos. Descarga un respaldo ahora en «Respaldo y datos» y abre la agenda desde la app instalada.</p>')+
+    (ui.undo?'<div class="deshacer" id="deshacer" role="status"><span>'+esc(ui.undo.texto)+'</span><button type="button" class="btn primary chico" data-a="deshacer">Deshacer</button></div>':'')+
+    (ui.msg?'<p class="msg" id="msg" role="status">'+esc(ui.msg)+'</p>':'')+
+    (ui.copiaManual?'<div class="copia"><p>'+esc(ui.copiaManual.titulo)+'</p><textarea id="copia-manual" readonly rows="8">'+esc(ui.copiaManual.texto)+'</textarea><div class="acciones"><button type="button" class="btn" data-a="copia-cerrar">Cerrar</button></div></div>':'');
+}
+
+/* =================== Vista: Hoy =================== */
+function vBienvenida(){
+  var loc=asistenciaLocal();
+  return '<div class="panel"><h3>Trae tus cursos para empezar</h3><p>Tu agenda todavía no tiene cursos. Puedes traer todo lo que tienes en Control de Asistencia: cursos, nóminas, asistencia, observaciones, notas y registros de clase.</p><div class="acciones">'+
+    (loc?'<button type="button" class="btn primary" data-a="imp-local">Traer '+loc.length+(loc.length===1?' curso guardado':' cursos guardados')+' en esta tableta</button>':'')+
+    '<button type="button" class="btn'+(loc?'':' primary')+'" data-a="ir-cuenta">Desde mi cuenta de Control de Asistencia</button>'+
+    '<label class="btn" for="arch-bienv">Desde un archivo de respaldo</label><input type="file" id="arch-bienv" class="oculto" data-file="respaldo" accept=".json,application/json">'+
+    '</div><p class="ayuda">¿Un curso nuevo? <button type="button" class="link" data-a="curso-nuevo">Créalo a mano</button> o <label class="link" for="pdf-bienv">importa la nómina en PDF</label><input type="file" id="pdf-bienv" class="oculto" data-file="pdf" accept=".pdf,application/pdf">.</p></div>';
+}
+function progresoDis(d){var r=S.rubricas[d.rubricaId];var g=grupoPorId(d.grupoId);if(!r||!g)return {listos:0,total:d.equipos.length};return {listos:d.equipos.filter(function(eq){return equipoListo(d,r,eq);}).length,total:d.equipos.length};}
+function vHoyDis(){
+  var hoy=hoyISO();
+  var ds=Object.keys(S.disertaciones).map(function(id){var d=S.disertaciones[id];return {id:id,d:d,pr:progresoDis(d)};})
+    .filter(function(x){return x.pr.total===0||x.pr.listos<x.pr.total||(x.d.fecha&&x.d.fecha>=sumarDias(hoy,-7));})
+    .sort(function(a,b){return cmp(a.d.fecha,b.d.fecha);}).slice(0,5);
+  return '<div class="panel"><h3>Disertaciones</h3>'+(ds.length?'<ul class="lista-simple">'+ds.map(function(x){var g=grupoPorId(x.d.grupoId);
+    return '<li><button type="button" class="item-btn" data-a="d-abrir" data-id="'+esc(x.id)+'"><b>'+esc(x.d.titulo||'Sin título')+'</b><span>'+esc(g?nombreGrupo(g):'Curso eliminado')+' · '+esc(x.d.fecha?fCorta(x.d.fecha):'sin fecha')+' · '+(x.pr.total?x.pr.listos+' de '+x.pr.total+' equipos evaluados':'equipos por armar')+'</span></button></li>';}).join('')+'</ul>':'<p class="ayuda">No hay disertaciones pendientes.</p>')+
+    '<div class="acciones"><button type="button" class="btn" data-a="d-nueva">+ Nueva disertación</button></div></div>';
+}
+function vHoyBit(){
+  var eqs=listaCol('equipos').map(function(t){var regs=registrosDe(t.id);var ult=regs[0];return {t:t,ult:ult,dias:ult?diasDesde(ult.fecha):null};})
+    .filter(function(x){return x.t.estado==='atencion'||x.t.estado==='riesgo'||x.dias==null||x.dias>14;});
+  return '<div class="panel"><h3>Bitácora de equipos</h3>'+(eqs.length?'<ul class="lista-simple">'+eqs.map(function(x){var e=estadoInfo(x.t.estado);
+    return '<li><button type="button" class="item-btn" data-a="b-abrir" data-id="'+esc(x.t.id)+'"><b>'+esc(x.t.nombre)+'</b><span>'+(e?esc(e.t):'Sin estado')+' · '+(x.ult?'último registro hace '+x.dias+(x.dias===1?' día':' días'):'sin registros')+'</span></button></li>';}).join('')+'</ul>':'<p class="ayuda">Todos los equipos están al día y con registros recientes.</p>')+'</div>';
+}
+function vHoy(){
+  var hoy=hoyISO(),dow=parseISO(hoy).getDay();
+  var h='<section class="seccion">';
+  var gs=gruposOrden();
+  if(!gs.length){h+=vPdfPend()+(ui.cursoForm?vFormCursoNuevo():'')+vBienvenida()+'<div class="dos-col">'+vHoyDis()+vHoyBit()+'</div>';return h+'</section>';}
+  var conDias=gs.some(function(g){return Array.isArray(g.dias)&&g.dias.length;});
+  var deHoy=conDias?gs.filter(function(g){return !Array.isArray(g.dias)||!g.dias.length||g.dias.indexOf(dow)>=0;}):gs;
+  var c1='<div class="panel"><h3>'+(conDias?'Clases de hoy':'Tus cursos')+'</h3>';
+  if(!deHoy.length)c1+='<p class="ayuda">Según tu horario, hoy no tienes clases.</p>';
+  c1+='<div class="cursos-hoy">'+deHoy.map(function(g){var c=conteoDia(g,hoy);var tom=c.p+c.a+c.l>0;var log=g.classLogs[hoy];
+    return '<button type="button" class="curso-hoy'+(tom?' hecho':'')+'" data-a="ir-lista" data-id="'+esc(g.id)+'"><b>'+esc(nombreGrupo(g))+'</b><span>'+(tom?'Lista: '+pl(c.p,'presente','presentes')+' · '+pl(c.a,'ausente','ausentes')+' · '+pl(c.l,'atraso','atrasos')+(c.sin?' · '+c.sin+' sin marcar':''):'Lista pendiente · '+pl(c.total,'estudiante','estudiantes'))+'</span><span>'+(log?'Registro de clase hecho':'Sin registro de clase')+'</span></button>';}).join('')+'</div>';
+  if(conDias&&deHoy.length<gs.length)c1+='<div class="campo"><label for="hoy-otro">Pasar lista en otro curso</label><select id="hoy-otro" data-sel="ir-lista"><option value="">Elige un curso</option>'+opcionesGrupos('')+'</select></div>';
+  else if(!conDias)c1+='<p class="ayuda">Marca los días de clase de cada curso en Asistencia › Curso y nómina, y aquí verás solo los de hoy.</p>';
+  c1+='</div>';
+  var pend=[];gs.forEach(function(g){var ds=Object.keys(g.classLogs).filter(function(d){return d<=hoy;}).sort();for(var i=ds.length-1;i>=0;i--){var l=g.classLogs[ds[i]];if(l&&l.tarea){pend.push({g:g,d:ds[i],t:l.tarea});break;}}});
+  pend.sort(function(a,b){return cmp(b.d,a.d);});
+  var c2='<div class="panel"><h3>Pendientes para la próxima clase</h3>'+(pend.length?'<ul class="lista-simple">'+pend.map(function(x){return '<li><button type="button" class="item-btn fuerte" data-a="ir-lista" data-id="'+esc(x.g.id)+'"><b>'+esc(x.t)+'</b><span>'+esc(nombreGrupo(x.g))+' · anotado el '+esc(fCorta(x.d))+'</span></button></li>';}).join('')+'</ul>':'<p class="ayuda">Sin pendientes. Se anotan en el registro de cada clase.</p>')+'</div>';
+  var riesgo=gs.map(function(g){return {g:g,n:g.estudiantes.filter(function(e){return enRiesgo(statsEst(g,e.id));}).length};}).filter(function(x){return x.n>0;});
+  var c3='<div class="panel"><h3>Asistencia bajo 75 %</h3>'+(riesgo.length?'<ul class="lista-simple">'+riesgo.map(function(x){return '<li><button type="button" class="item-btn" data-a="ir-stats" data-id="'+esc(x.g.id)+'"><b>'+x.n+(x.n===1?' estudiante':' estudiantes')+'</b><span>'+esc(nombreGrupo(x.g))+'</span></button></li>';}).join('')+'</ul>':'<p class="ayuda">Nadie bajo 75 %. Se cuenta desde la tercera clase registrada.</p>')+'</div>';
+  h+='<div class="dos-col"><div class="seccion">'+c1+c2+'</div><div class="seccion">'+c3+vHoyDis()+vHoyBit()+'</div></div>';
+  return h+'</section>';
+}
+
+/* =================== Vista: Asistencia =================== */
+function vSinCursos(){return '<section class="seccion">'+vPdfPend()+(ui.cursoForm?vFormCursoNuevo():'')+vBienvenida()+'</section>';}
+function vFechaNav(){
+  return '<div class="fecha-nav" role="group" aria-label="Fecha"><button type="button" class="btn" data-a="fecha-mover" data-v="-1" aria-label="Día anterior">◀</button>'+
+    '<div class="campo"><label for="sel-fecha">Fecha</label><input type="date" id="sel-fecha" data-sel="fecha" value="'+esc(ui.fecha)+'"></div>'+
+    '<button type="button" class="btn" data-a="fecha-mover" data-v="1" aria-label="Día siguiente">▶</button>'+(ui.fecha!==hoyISO()?'<button type="button" class="btn" data-a="fecha-hoy">Hoy</button>':'')+'</div>';
+}
+function vAsistencia(){
+  if(!S.grupos.length)return vSinCursos();
+  var g=grupoActual();
+  if(ui.ficha){var e=estPorId(g,ui.ficha);if(e)return vFicha(g,e);ui.ficha=null;}
+  var h='<section class="seccion"><div class="barra"><div class="campo"><label for="sel-grupo">Curso</label><select id="sel-grupo" data-sel="grupo">'+opcionesGrupos(g.id)+'</select></div>'+(ui.aVista==='lista'?vFechaNav():'')+'</div>';
+  h+=segmento('aVista',[['lista','Pasar lista'],['stats','Estadísticas'],['curso','Curso y nómina']]);
+  h+=ui.aVista==='stats'?vStats(g):ui.aVista==='curso'?vCurso(g):vLista(g);
+  return h+'</section>';
+}
+function vPat(sid,st){
+  return '<div class="pat" role="group" aria-label="Asistencia">'+[['present','P','Presente'],['absent','A','Ausente'],['late','T','Atraso']].map(function(o){
+    return '<button type="button" data-a="marcar" data-id="'+esc(sid)+'" data-v="'+o[0]+'" aria-pressed="'+(st===o[0])+'" aria-label="'+o[2]+'">'+o[1]+'</button>';}).join('')+'</div>';
+}
+function vConteo(g){
+  var c=conteoDia(g,ui.fecha);
+  function sp(n,a,b){return '<span><b>'+n+'</b> '+(n===1?a:b)+'</span>';}
+  return '<div class="conteo-lista">'+sp(c.total,'estudiante','estudiantes')+sp(c.p,'presente','presentes')+sp(c.a,'ausente','ausentes')+sp(c.l,'atraso','atrasos')+
+    (c.sin&&c.total?sp(c.sin,'sin marcar','sin marcar')+'<button type="button" class="btn" data-a="todos-presentes">'+(c.sin===1?'Marcar presente al que falta':'Marcar presentes a los '+c.sin+' sin marcar')+'</button>':'')+'</div>';
+}
+function vFormLog(g,f,ctx){
+  var l=g.classLogs[f]||{};
+  var at=' data-g="'+esc(g.id)+'" data-d="'+esc(f)+'"';
+  return '<div class="form" id="form-log"><h3>Registro de la clase · '+esc(fLarga(f))+'</h3>'+(ctx==='clases'?'<p class="eyebrow">'+esc(nombreGrupo(g))+'</p>':'')+
+    '<div class="campo"><label for="lg-obj">Objetivo de la clase</label><textarea id="lg-obj" rows="2" data-f="log.objetivo"'+at+'>'+esc(l.objetivo||'')+'</textarea></div>'+
+    '<div class="campo"><label for="lg-tem">Temas y conceptos clave</label><textarea id="lg-tem" rows="3" data-f="log.temas"'+at+'>'+esc(l.temas||'')+'</textarea></div>'+
+    '<div class="campo"><label for="lg-obs">Observaciones generales</label><textarea id="lg-obs" rows="2" data-f="log.obs"'+at+'>'+esc(l.obs||'')+'</textarea></div>'+
+    '<div class="campo"><label for="lg-tar">Pendiente para la próxima clase</label><textarea id="lg-tar" rows="2" data-f="log.tarea"'+at+'>'+esc(l.tarea||'')+'</textarea></div>'+
+    '<label class="campo-check" for="lg-dest"><input type="checkbox" id="lg-dest" data-f="log.destacado"'+at+(l.destacado?' checked':'')+'> Destacar este registro</label>'+
+    '<p class="ayuda">Se guarda mientras escribes.</p><div class="acciones"><button type="button" class="btn primary" data-a="log-listo" data-ctx="'+ctx+'">Listo</button>'+
+    (g.classLogs[f]?'<button type="button" class="btn quiet" data-a="log-borrar"'+at+'>Borrar registro</button>':'')+'</div></div>';
+}
+function vRegClase(g,f){
+  if(ui.regAbierto)return vFormLog(g,f,'lista');
+  var l=g.classLogs[f];var p=[];
+  if(l&&l.objetivo)p.push('<p><b>Objetivo:</b> '+esc(l.objetivo)+'</p>');
+  if(l&&l.temas)p.push('<p><b>Temas:</b> '+esc(l.temas)+'</p>');
+  if(l&&l.obs)p.push('<p><b>Observaciones:</b> '+esc(l.obs)+'</p>');
+  return '<div class="reg-clase"><div><p class="etiqueta">Registro de la clase'+(l&&l.destacado?' · ★ destacado':'')+'</p>'+(p.length?p.join(''):'<p class="ayuda">Sin registro para este día.</p>')+(l&&l.tarea?'<p class="reg-tarea">Pendiente: '+esc(l.tarea)+'</p>':'')+'</div>'+
+    '<button type="button" class="btn" data-a="reg-abrir">'+(l?'Editar registro':'+ Registrar la clase')+'</button></div>';
+}
+function vLista(g){
+  var h='<div id="conteo">'+vConteo(g)+'</div>'+vRegClase(g,ui.fecha);
+  if(!g.estudiantes.length)return h+'<div class="vacio"><h3>Este curso no tiene estudiantes</h3><p>Agrégalos o importa la nómina en PDF desde «Curso y nómina».</p><button type="button" class="btn primary" data-a="vista" data-k="aVista" data-v="curso">Ir a Curso y nómina</button></div>';
+  var est=ordenarEst(g.estudiantes,ui.soloApellido),att=g.asistencia[ui.fecha]||{},obs=g.notas[ui.fecha]||{};
+  var multi=!ui.soloApellido&&cursosDe(g).length>1;
+  h+='<div class="acciones"><span class="ayuda">Orden de la lista:</span><div class="segmento" role="group"><button type="button" class="seg" data-a="orden" data-v="curso" aria-pressed="'+(!ui.soloApellido)+'">Curso y apellido</button><button type="button" class="seg" data-a="orden" data-v="apellido" aria-pressed="'+ui.soloApellido+'">Solo apellido</button></div></div>';
+  var last=null,n=0,rows='';
+  est.forEach(function(e){
+    if(multi&&e.c!==last){last=e.c;rows+='<li class="sep-curso">'+esc(e.c||'Sin curso')+'</li>';}
+    n++;var s=statsEst(g,e.id),bajo=enRiesgo(s);
+    rows+='<li class="alumno"><span class="n-lista">'+n+'</span><button type="button" class="al-nombre" data-a="ficha" data-id="'+esc(e.id)+'"><b>'+esc(apellidos(e))+'</b>'+(e.n?', '+esc(e.n):'')+
+      '<small>'+esc(e.c||'Sin curso')+(bajo?' · asistencia '+s.pct+' %':'')+'</small></button>'+vPat(e.id,att[e.id]||null)+
+      '<button type="button" class="obs-b'+(obs[e.id]?' tiene':'')+'" data-a="ficha-obs" data-id="'+esc(e.id)+'" aria-label="Observación de '+esc(nombreCorto(e))+'">'+(obs[e.id]?'Obs ✓':'Obs')+'</button></li>';
+  });
+  return h+'<ol class="alumnos">'+rows+'</ol>';
+}
+function campoCurso(pre,g,draft){
+  var cs=cursosDe(g);if(draft.c&&draft.c!=='__otro'&&cs.indexOf(draft.c)<0)cs=cs.concat([draft.c]).sort(cmp);
+  return '<div class="campo"><label for="'+pre+'-c">Curso</label><select id="'+pre+'-c" data-f="'+pre+'.c"><option value="">Elige el curso</option>'+
+    cs.map(function(c){return '<option value="'+esc(c)+'"'+(!draft.otro&&draft.c===c?' selected':'')+'>'+esc(c)+'</option>';}).join('')+
+    '<option value="__otro"'+(draft.otro?' selected':'')+'>Otro curso…</option></select>'+
+    (draft.otro?'<input type="text" id="'+pre+'-co" data-f="'+pre+'.cOtro" value="'+esc(draft.cOtro||'')+'" placeholder="Ej.: 4° C" aria-label="Nombre del curso">':'')+'</div>';
+}
+function cursoDeDraft(d){return normCurso(d.otro?d.cOtro:d.c);}
+function vFicha(g,e){
+  var f=ui.fecha,s=statsEst(g,e.id),att=(g.asistencia[f]||{})[e.id]||null,obs=(g.notas[f]||{})[e.id]||'';
+  if(!ui.estDraft||ui.estDraft.sid!==e.id)ui.estDraft={sid:e.id,ap:e.ap,am:e.am,n:e.n,c:e.c,otro:false,cOtro:''};
+  var d=ui.estDraft;
+  var h='<section class="seccion"><button type="button" class="btn quiet volver" data-a="ficha-cerrar">← Volver a la lista</button>';
+  h+='<div class="ficha-cab"><p class="eyebrow">'+esc(nombreGrupo(g))+' · '+esc(e.c||'Sin curso')+'</p><h2>'+esc(nombreCompleto(e))+'</h2></div><div class="dos-col"><div class="seccion">';
+  h+='<div class="panel"><h3>Observación del '+esc(fLarga(f))+'</h3><textarea id="obs-txt" rows="4" data-f="obs" data-id="'+esc(e.id)+'" placeholder="Escribe una observación sobre el estudiante">'+esc(obs)+'</textarea><p class="ayuda">Se guarda mientras escribes. Para anotar en otro día, cambia la fecha en la lista.</p>'+(obs?'<div class="acciones"><button type="button" class="btn quiet" data-a="obs-borrar" data-id="'+esc(e.id)+'">Borrar observación</button></div>':'')+'</div>';
+  var fs=fechasAsistencia(g).filter(function(x){return g.asistencia[x][e.id];}).reverse().slice(0,10);
+  h+='<div class="panel"><h3>Asistencia</h3><div class="acciones"><span>'+esc(fCorta(f))+':</span>'+vPat(e.id,att)+'</div>'+
+    (s.r?'<p><b class="'+(enRiesgo(s)?'baja':'')+'">'+s.pct+' %</b> en '+s.r+(s.r===1?' clase registrada':' clases registradas')+' · '+pl(s.p,'presente','presentes')+' · '+pl(s.a,'ausente','ausentes')+' · '+pl(s.l,'atraso','atrasos')+'</p>':'<p class="ayuda">Aún sin clases registradas.</p>')+
+    (fs.length?'<ul class="lista-simple">'+fs.map(function(x){return '<li class="item-btn"><span>'+esc(fLarga(x))+' · <b>'+ATT[g.asistencia[x][e.id]]+'</b></span></li>';}).join('')+'</ul>':'')+'</div>';
+  var c=cal(g),pr=promNotasEst(g,e.id);
+  h+='<div class="panel"><h3>Notas</h3>'+(c.columns.length?'<table><tbody>'+c.columns.map(function(col){var v=(c.data[e.id]||{})[col.id];return '<tr><td>'+esc(col.name)+(col.date?'<small>'+esc(fCorta(col.date))+'</small>':'')+'</td><td class="num'+(v!=null&&v<4?' baja':'')+'">'+(v!=null?num(v,1):'—')+'</td></tr>';}).join('')+
+    '<tr><td><b>Promedio</b></td><td class="num'+(pr!=null&&pr<4?' baja':'')+'"><b>'+(pr!=null?num(pr,1):'—')+'</b></td></tr></tbody></table>':'<p class="ayuda">Este curso aún no tiene evaluaciones.</p>')+'</div>';
+  h+='</div><div class="seccion">';
+  var hist=Object.keys(g.notas).filter(function(x){return x!==f&&g.notas[x]&&g.notas[x][e.id];}).sort().reverse();
+  h+='<div class="panel"><h3>Observaciones de otros días</h3>'+(hist.length?'<ul class="hist">'+hist.map(function(x){return '<li><time datetime="'+esc(x)+'">'+esc(fLarga(x))+'</time><p>'+esc(g.notas[x][e.id])+'</p></li>';}).join('')+'</ul>':'<p class="ayuda">No hay observaciones de otros días.</p>')+'</div>';
+  h+='<form class="panel" data-form="est"><h3>Datos del estudiante</h3>'+vError()+
+    '<div class="fila-2"><div class="campo"><label for="es-ap">Apellido paterno</label><input type="text" id="es-ap" data-f="es.ap" value="'+esc(d.ap)+'"></div><div class="campo"><label for="es-am">Apellido materno</label><input type="text" id="es-am" data-f="es.am" value="'+esc(d.am)+'"></div></div>'+
+    '<div class="campo"><label for="es-n">Nombres</label><input type="text" id="es-n" data-f="es.n" value="'+esc(d.n)+'"></div>'+campoCurso('es',g,d)+
+    '<div class="acciones"><button type="submit" class="btn primary">Guardar datos</button><button type="button" class="btn quiet" data-a="est-borrar" data-id="'+esc(e.id)+'">Eliminar estudiante</button></div></form>';
+  return h+'</div></div></section>';
+}
+function grafAsistencia(g,fechas){
+  var ult=fechas.slice(-12),W=640,H=230,ml=40,mr=8,mt=18,mb=34,iw=W-ml-mr,ih=H-mt-mb,n=ult.length||1,bw=iw/n,tot=g.estudiantes.length||1;
+  function y(v){return mt+ih-(v/100)*ih;}
+  var s='<svg class="grafico" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Porcentaje de presentes en las últimas clases">';
+  [0,25,50,75,100].forEach(function(v){s+='<line x1="'+ml+'" x2="'+(W-mr)+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="currentColor" stroke-opacity="'+(v===75?1:0.25)+'" stroke-width="'+(v===75?1.5:1)+'"'+(v===75?' stroke-dasharray="6 4"':'')+'/><text x="'+(ml-6)+'" y="'+(y(v)+4)+'" text-anchor="end" font-size="12" fill="currentColor">'+v+' %</text>';});
+  ult.forEach(function(d,i){var c=conteoDia(g,d);var pct=Math.round(c.p/tot*100);var w=bw*0.6,x=ml+i*bw+(bw-w)/2;
+    s+='<rect x="'+x.toFixed(1)+'" y="'+y(pct).toFixed(1)+'" width="'+w.toFixed(1)+'" height="'+(mt+ih-y(pct)).toFixed(1)+'" fill="currentColor"/>'+
+      '<text x="'+(x+w/2).toFixed(1)+'" y="'+(y(pct)-5).toFixed(1)+'" text-anchor="middle" font-size="12" font-weight="700" fill="currentColor">'+pct+'</text>'+
+      '<text x="'+(x+w/2).toFixed(1)+'" y="'+(H-12)+'" text-anchor="middle" font-size="12" fill="currentColor">'+ddmm(d)+'</text>';});
+  return s+'</svg>';
+}
+function datosStats(g){
+  var fechas=fechasAsistencia(g);var filas=g.estudiantes.map(function(e){return {e:e,s:statsEst(g,e.id),prom:promNotasEst(g,e.id)};}).filter(function(x){return x.s.r>0;});
+  filas.sort(function(a,b){return a.s.pct-b.s.pct||cmpEst(a.e,b.e);});
+  var tp=0,tr=0;filas.forEach(function(x){tp+=x.s.p;tr+=x.s.r;});
+  return {fechas:fechas,filas:filas,prom:tr?Math.round(tp/tr*100):null,bajo:filas.filter(function(x){return enRiesgo(x.s);}).length};
+}
+function vStats(g){
+  var D=datosStats(g);
+  if(!D.fechas.length)return '<div class="vacio"><h3>Sin asistencia registrada</h3><p>Las estadísticas aparecen cuando pasas lista al menos una vez.</p></div>';
+  var hasCal=cal(g).columns.length>0;
+  var h='<div class="stats"><div class="stat">Clases<b>'+D.fechas.length+'</b></div><div class="stat">Asistencia promedio<b>'+(D.prom!=null?D.prom+' %':'—')+'</b></div><div class="stat">Bajo 75 %<b>'+D.bajo+'</b></div><div class="stat">Estudiantes<b>'+g.estudiantes.length+'</b></div></div>';
+  h+='<div class="panel suave"><h3>Presentes por clase (últimas '+Math.min(12,D.fechas.length)+')</h3>'+grafAsistencia(g,D.fechas)+'<p class="leyenda"><span>Porcentaje del curso marcado como presente. La línea punteada marca 75 %.</span></p></div>';
+  h+='<div class="acciones"><button type="button" class="btn" data-a="imp-stats">Imprimir estadísticas</button></div>';
+  h+='<div class="tabla-wrap"><table><thead><tr><th>Estudiante</th><th>Curso</th><th class="num">Asistencia</th><th class="num">P</th><th class="num">A</th><th class="num">T</th><th class="num">Clases</th>'+(hasCal?'<th class="num">Prom. notas</th>':'')+'</tr></thead><tbody>'+
+    D.filas.map(function(x){return '<tr><td><button type="button" class="link" data-a="ficha" data-id="'+esc(x.e.id)+'">'+esc(apellidos(x.e))+', '+esc(x.e.n)+'</button></td><td>'+esc(x.e.c)+'</td><td class="num'+(enRiesgo(x.s)?' baja':'')+'">'+x.s.pct+' %</td><td class="num">'+x.s.p+'</td><td class="num">'+x.s.a+'</td><td class="num">'+x.s.l+'</td><td class="num">'+x.s.r+'</td>'+(hasCal?'<td class="num'+(x.prom!=null&&x.prom<4?' baja':'')+'">'+(x.prom!=null?num(x.prom,1):'—')+'</td>':'')+'</tr>';}).join('')+'</tbody></table></div>';
+  h+='<div class="panel suave"><h3>Historial de clases</h3><p class="ayuda">Toca una fecha para abrir la lista de ese día.</p><div class="fechas-grid">'+D.fechas.slice().reverse().map(function(d){var c=conteoDia(g,d);
+    return '<button type="button" class="fecha-b'+(c.a?' con-aus':'')+'" data-a="ir-fecha" data-v="'+d+'"><b>'+esc(fCorta(d))+'</b><span>P '+c.p+' · A '+c.a+' · T '+c.l+'</span></button>';}).join('')+'</div></div>';
+  return h;
+}
+function vPdfPend(){
+  var p=ui.pdfPend;if(!p)return '';var m=grupoCoincide(p);
+  return '<div class="panel"><h3>Nómina leída del PDF</h3><p><b>'+esc(tit(p.asignatura))+'</b>'+(p.grupo?' · '+esc(tit(p.grupo)):'')+' · '+esc(p.nivel)+'° medio · '+p.estudiantes.length+' estudiantes'+(p.profesor?' · Profesor: '+esc(p.profesor):'')+'</p>'+
+    '<div class="acciones">'+(m?'<button type="button" class="btn primary" data-a="pdf-actualizar">Actualizar la nómina de '+esc(nombreGrupo(m))+'</button>':'')+
+    '<button type="button" class="btn'+(m?'':' primary')+'" data-a="pdf-nuevo">'+(m?'Crear otro curso con esta nómina':'Crear el curso')+'</button><button type="button" class="btn quiet" data-a="pdf-cancelar">Cancelar</button></div>'+
+    (m?'<p class="ayuda">Actualizar conserva la asistencia y las notas: agrega a quienes falten y corrige el curso de quienes ya están.</p>':'')+'</div>';
+}
+function vFormCursoNuevo(){
+  var d=ui.cursoForm;
+  return '<form class="form" data-form="curso-nuevo"><h3>Nuevo curso</h3>'+vError()+
+    '<div class="fila-3"><div class="campo"><label for="cn-asig">Asignatura</label><input type="text" id="cn-asig" data-f="cn.asignatura" value="'+esc(d.asignatura)+'" placeholder="Ej.: Biología Celular y Molecular"></div>'+
+    '<div class="campo"><label for="cn-grupo">Grupo</label><input type="text" id="cn-grupo" data-f="cn.grupo" value="'+esc(d.grupo)+'" placeholder="Ej.: Grupo 1"></div>'+
+    '<div class="campo"><label for="cn-nivel">Nivel</label><select id="cn-nivel" data-f="cn.nivel">'+['1','2','3','4'].map(function(n){return '<option value="'+n+'"'+(d.nivel===n?' selected':'')+'>'+n+'° medio</option>';}).join('')+'</select></div></div>'+
+    '<div class="campo"><label for="cn-lista">Estudiantes (opcional, uno por línea)</label><textarea id="cn-lista" rows="6" data-f="cn.lista" placeholder="Pérez, Soto, María José, 4° A">'+esc(d.lista)+'</textarea><p class="ayuda">Formato: apellido paterno, apellido materno, nombres, curso. También puedes pegar las columnas copiadas desde Excel.</p></div>'+
+    '<div class="acciones"><button type="submit" class="btn primary">Crear curso</button><button type="button" class="btn" data-a="cn-cancelar">Cancelar</button></div></form>';
+}
+function vCurso(g){
+  if(!ui.cursoDatos||ui.cursoDatos.id!==g.id)ui.cursoDatos={id:g.id,asignatura:g.asignatura,grupo:g.grupo,nivel:g.nivel,profesor:g.profesor||''};
+  if(!ui.nuevoEst){var cs1=cursosDe(g);ui.nuevoEst={ap:'',am:'',n:'',c:cs1.length===1?cs1[0]:'',otro:false,cOtro:''};}
+  var cd=ui.cursoDatos,ne=ui.nuevoEst;
+  var h=vPdfPend()+(ui.cursoForm?vFormCursoNuevo():'')+'<div class="dos-col"><div class="seccion">';
+  h+='<form class="panel" data-form="nuevo-est"><h3>Agregar estudiante</h3>'+
+    '<div class="fila-2"><div class="campo"><label for="ne-ap">Apellido paterno</label><input type="text" id="ne-ap" data-f="ne.ap" value="'+esc(ne.ap)+'" autocomplete="off"></div><div class="campo"><label for="ne-am">Apellido materno</label><input type="text" id="ne-am" data-f="ne.am" value="'+esc(ne.am)+'" autocomplete="off"></div></div>'+
+    '<div class="campo"><label for="ne-n">Nombres</label><input type="text" id="ne-n" data-f="ne.n" value="'+esc(ne.n)+'" autocomplete="off"></div>'+campoCurso('ne',g,ne)+
+    '<button type="submit" class="btn primary">Agregar a la lista</button><p class="ayuda">Queda ordenado con su curso y por apellido paterno.</p></form>';
+  h+='<div class="panel"><h3>Pegar varios estudiantes</h3><p class="ayuda">Uno por línea: apellido paterno, apellido materno, nombres, curso. También sirven las columnas copiadas desde Excel.</p>'+
+    '<textarea id="pegar" rows="5" data-f="pegar">'+esc(ui.pegar)+'</textarea><div class="campo"><label for="pg-curso">Curso para quienes no lo indiquen</label><select id="pg-curso" data-f="pegarCurso"><option value="">Sin curso</option>'+cursosDe(g).map(function(c){return '<option value="'+esc(c)+'"'+(ui.pegarCurso===c?' selected':'')+'>'+esc(c)+'</option>';}).join('')+'</select></div>'+
+    '<div class="acciones"><button type="button" class="btn" data-a="pegar-agregar">Agregar estudiantes</button></div></div>';
+  h+='<div class="panel"><h3>Días de clase</h3><p class="ayuda">La pantalla Hoy muestra este curso los días marcados.</p><div class="dias">'+DIAS.map(function(d){return '<button type="button" class="btn" data-a="dia" data-v="'+d[0]+'" aria-pressed="'+((g.dias||[]).indexOf(d[0])>=0)+'" aria-label="'+d[2]+'">'+d[1]+'</button>';}).join('')+'</div></div>';
+  h+='</div><div class="seccion">';
+  h+='<form class="panel" data-form="curso-datos"><h3>Datos del curso</h3>'+vError()+
+    '<div class="campo"><label for="cd-asig">Asignatura</label><input type="text" id="cd-asig" data-f="cd.asignatura" value="'+esc(cd.asignatura)+'"></div>'+
+    '<div class="fila-2"><div class="campo"><label for="cd-grupo">Grupo</label><input type="text" id="cd-grupo" data-f="cd.grupo" value="'+esc(cd.grupo)+'"></div><div class="campo"><label for="cd-nivel">Nivel</label><select id="cd-nivel" data-f="cd.nivel">'+['1','2','3','4'].map(function(n){return '<option value="'+n+'"'+(cd.nivel===n?' selected':'')+'>'+n+'° medio</option>';}).join('')+'</select></div></div>'+
