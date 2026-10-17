@@ -1,8 +1,10 @@
 /* Agenda Pedagógica: guarda la app completa para usarla sin conexión.
-   Con internet, la página se pide a la red (máx. 3 s) para recibir actualizaciones;
-   sin internet, todo sale del caché. Cambia CACHE en cada versión publicada. */
+   La página se pide a la red (máx. 3 s) y, sin internet, sale del caché.
+   Los demás archivos propios salen siempre del caché que se llenó al instalar: así las partes de la app
+   nunca se mezclan entre versiones. Para publicar cambios, cambia CACHE y todo se descarga de nuevo junto. */
 var CACHE = 'agenda-v1';
-var PROPIOS = ['./', './index.html', './app.js', './estilos.css', './manifest.webmanifest', './icono.svg', './icono-maskable.svg'];
+var PROPIOS = ['./', './index.html', './app.js', './estilos.css', './manifest.webmanifest', './icono.svg', './icono-maskable.svg',
+  './partes/app-1.js', './partes/app-2.js', './partes/app-3.js', './partes/app-4.js', './partes/app-5.js', './partes/app-6.js'];
 var EXTERNOS = [
   'https://cdn.jsdelivr.net/npm/@fontsource/atkinson-hyperlegible@5.3.0/files/atkinson-hyperlegible-latin-400-normal.woff2',
   'https://cdn.jsdelivr.net/npm/@fontsource/atkinson-hyperlegible@5.3.0/files/atkinson-hyperlegible-latin-700-normal.woff2',
@@ -14,7 +16,7 @@ var EXTERNOS = [
 
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) {
-    return c.addAll(PROPIOS).then(function () {
+    return c.addAll(PROPIOS.map(function (u) { return new Request(u, { cache: 'reload' }); })).then(function () {
       return Promise.all(EXTERNOS.map(function (u) {
         return fetch(u, { mode: 'cors' }).then(function (r) { if (r.ok) return c.put(u, r); }).catch(function () {});
       }));
@@ -61,8 +63,7 @@ self.addEventListener('fetch', function (e) {
   }
   e.respondWith(caches.open(CACHE).then(function (c) {
     return c.match(req, { ignoreSearch: true }).then(function (g) {
-      var red = fetch(req).then(function (r) { if (r && r.ok) c.put(req, r.clone()); return r; }).catch(function () { return g; });
-      return g || red;
+      return g || fetch(req).then(function (r) { if (r && r.ok) c.put(req, r.clone()); return r; });
     });
   }));
 });
