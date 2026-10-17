@@ -37,7 +37,7 @@
   'crono-toggle':function(){var d=disActual(),eq=d&&d.equipos[ui.dEq];if(!eq)return;
     if(crono.inicio&&crono.eqId===eq.id){detenerCrono(true);render();return;}
     if(crono.eqId!==eq.id){var ev=d.evals[eq.id];crono.acumulado=(ev&&ev.duracionSeg)||0;crono.eqId=eq.id;}
-    crono.inicio=Date.now();clearInterval(crono.intervalo);crono.intervalo=setInterval(tick,1000);
+    crono.inicio=Date.now();programarTick();
     var r=S.rubricas[d.rubricaId],m=document.getElementById('d-marcador');if(m)m.innerHTML=vDisMarcador(d,r,eq,d.evals[eq.id]);},
   'crono-reset':function(){var d=disActual(),eq=d&&d.equipos[ui.dEq];detenerCrono(false);crono.acumulado=0;crono.eqId=eq?eq.id:null;var r=d&&S.rubricas[d.rubricaId],m=document.getElementById('d-marcador');if(m&&eq)m.innerHTML=vDisMarcador(d,r,eq,d.evals[eq.id]);},
   'd-pasar':function(){var d=disActual();if(!d)return;conDeshacer('Notas pasadas a Notas.',function(){pasarANotas(d);});render();},
@@ -201,8 +201,8 @@ document.addEventListener('change',function(e){
 });
 window.addEventListener('online',pintarGuardado);window.addEventListener('offline',pintarGuardado);
 if(mqAncho.addEventListener)mqAncho.addEventListener('change',function(){render();});
-window.addEventListener('pagehide',persistir);
-document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')persistir();});
+window.addEventListener('pagehide',function(){persistir(true);});
+document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')persistir(true);});
 
 /* =================== Inicio =================== */
 leerGuardado().then(function(raw){

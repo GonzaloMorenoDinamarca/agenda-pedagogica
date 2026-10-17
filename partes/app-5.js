@@ -102,10 +102,14 @@ function importarNotasCSV(file,g){
 
 /* =================== Disertaciones: lógica =================== */
 function tiempoCrono(){return crono.acumulado+(crono.inicio?(Date.now()-crono.inicio)/1000:0);}
-function tick(){var el=document.getElementById('crono-t');if(!el)return;var s=tiempoCrono();el.textContent=mmss(s);var d=disActual(),r=d&&S.rubricas[d.rubricaId];el.classList.toggle('pasado',!!(r&&r.minutos&&s>r.minutos*60));}
+/* En marcha, el cronómetro cambia en pantalla una vez por minuto (no cada segundo): en tinta electrónica cada cambio es un refresco.
+   La duración exacta se calcula con el reloj al detenerlo, aunque la tableta se haya suspendido. */
+function minCrono(s){return Math.floor(s/60)+' min';}
+function programarTick(){clearTimeout(crono.intervalo);crono.intervalo=null;if(!crono.inicio)return;var ms=60000-Math.floor(tiempoCrono()*1000)%60000;crono.intervalo=setTimeout(function(){tick();programarTick();},ms+50);}
+function tick(){var el=document.getElementById('crono-t');if(!el)return;var s=tiempoCrono(),t=minCrono(s);if(el.textContent!==t)el.textContent=t;var d=disActual(),r=d&&S.rubricas[d.rubricaId],pas=!!(r&&r.minutos&&s>r.minutos*60);if(el.classList.contains('pasado')!==pas)el.classList.toggle('pasado',pas);}
 function detenerCrono(registrar){
   if(crono.inicio){crono.acumulado+=(Date.now()-crono.inicio)/1000;crono.inicio=null;}
-  clearInterval(crono.intervalo);crono.intervalo=null;
+  clearTimeout(crono.intervalo);crono.intervalo=null;
   if(!registrar||!crono.eqId)return;
   var d=disActual();if(!d)return;var r=S.rubricas[d.rubricaId];var eq=d.equipos.filter(function(e){return e.id===crono.eqId;})[0];if(!eq||!r)return;
   var ev=evDe(d,eq.id,true);ev.duracionSeg=Math.round(crono.acumulado);
