@@ -1,8 +1,8 @@
 /* Agenda Pedagógica: guarda la app completa para usarla sin conexión.
-   La página se pide a la red (máx. 3 s) y, sin internet, sale del caché.
-   Los demás archivos propios salen siempre del caché que se llenó al instalar: así las partes de la app
-   nunca se mezclan entre versiones. Para publicar cambios, cambia CACHE y todo se descarga de nuevo junto. */
-var CACHE = 'agenda-v1';
+   Todo sale del caché que se llenó al instalar, también la página: abre al instante y no usa la red ni la batería en buscarla.
+   Así las partes de la app nunca se mezclan entre versiones. El navegador revisa solo este archivo para saber si hay versión nueva:
+   para publicar cambios, cambia CACHE y todo se descarga de nuevo junto. */
+var CACHE = 'agenda-v2';
 var PROPIOS = ['./', './index.html', './app.js', './estilos.css', './manifest.webmanifest', './icono.svg', './icono-maskable.svg',
   './partes/app-1.js', './partes/app-2.js', './partes/app-3.js', './partes/app-4.js', './partes/app-5.js', './partes/app-6.js'];
 var EXTERNOS = [
@@ -30,13 +30,6 @@ self.addEventListener('activate', function (e) {
   }).then(function () { return self.clients.claim(); }));
 });
 
-function conTiempo(p, ms) {
-  return new Promise(function (res, rej) {
-    var t = setTimeout(function () { rej(new Error('tiempo')); }, ms);
-    p.then(function (v) { clearTimeout(t); res(v); }, function (err) { clearTimeout(t); rej(err); });
-  });
-}
-
 self.addEventListener('fetch', function (e) {
   var req = e.request;
   if (req.method !== 'GET') return;
@@ -52,11 +45,8 @@ self.addEventListener('fetch', function (e) {
   if (url.origin !== self.location.origin) return;
   if (req.mode === 'navigate') {
     e.respondWith(caches.open(CACHE).then(function (c) {
-      return conTiempo(fetch(req), 3000).then(function (r) {
-        if (r && r.ok) c.put('./index.html', r.clone());
-        return r;
-      }).catch(function () {
-        return c.match('./index.html').then(function (g) { return g || c.match('./'); });
+      return c.match('./index.html').then(function (g) {
+        return g || fetch(req).then(function (r) { if (r && r.ok) c.put('./index.html', r.clone()); return r; });
       });
     }));
     return;

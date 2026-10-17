@@ -108,25 +108,34 @@ var almacen={ok:true,tipo:null};
 var dbp=null;
 function idbAbrir(){return new Promise(function(res,rej){try{if(!window.indexedDB)return rej(new Error('sin idb'));var r=indexedDB.open(APP,1);r.onupgradeneeded=function(){r.result.createObjectStore('kv');};r.onsuccess=function(){res(r.result);};r.onerror=function(){rej(r.error);};r.onblocked=function(){rej(new Error('bloqueado'));};}catch(e){rej(e);}});}
 function leerLS(){try{return localStorage.getItem(LS_DATOS);}catch(e){return null;}}
+/* De dos copias guardadas, la más reciente (marca meta.guardado, que va al comienzo del texto). */
+function marcaDe(raw){var m=/"guardado":(\d+)/.exec(String(raw||'').slice(0,4000));return m?+m[1]:0;}
+function masReciente(a,b){if(!a)return b;if(!b)return a;return marcaDe(b)>marcaDe(a)?b:a;}
 function leerGuardado(){
   return new Promise(function(res){
     dbp=idbAbrir();
     var listo=false;var t=setTimeout(function(){if(!listo){listo=true;dbp=null;res(leerLS());}},4000);
-    dbp.then(function(db){var rq=db.transaction('kv','readonly').objectStore('kv').get('datos');rq.onsuccess=function(){if(listo)return;listo=true;clearTimeout(t);almacen.tipo='idb';res(rq.result||leerLS());};rq.onerror=function(){if(listo)return;listo=true;clearTimeout(t);res(leerLS());};})
+    dbp.then(function(db){var rq=db.transaction('kv','readonly').objectStore('kv').get('datos');rq.onsuccess=function(){if(listo)return;listo=true;clearTimeout(t);almacen.tipo='idb';res(masReciente(rq.result,leerLS()));};rq.onerror=function(){if(listo)return;listo=true;clearTimeout(t);res(leerLS());};})
       .catch(function(){if(listo)return;listo=true;clearTimeout(t);dbp=null;res(leerLS());});
   });
 }
-var tGuardar=null;
-function guardar(){clearTimeout(tGuardar);tGuardar=setTimeout(persistir,250);}
-function persistir(){
+var tGuardar=null,cambios=0,guardados=0;
+/* Guarda 1 s después del último cambio (agrupa toques y tecleo en una sola escritura). */
+function guardar(){cambios++;clearTimeout(tGuardar);tGuardar=setTimeout(persistir,1000);}
+/* urgente: la app pasa a segundo plano o se cierra. Si queda algo sin guardar, además de IndexedDB deja al instante
+   una copia en localStorage, que no alcanza a perderse al cerrar; al abrir se usa la más reciente de las dos. */
+function persistir(urgente){
   clearTimeout(tGuardar);tGuardar=null;if(!S)return;
+  if(urgente===true&&guardados>=cambios)return;
+  var v=++cambios;S.meta.guardado=Date.now();
   var str;try{str=JSON.stringify(S);}catch(e){return;}
+  if(urgente===true&&dbp){try{localStorage.setItem(LS_DATOS,str);guardados=Math.max(guardados,v);}catch(e){}}
   if(dbp){
     dbp.then(function(db){return new Promise(function(res,rej){var tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(str,'datos');tx.oncomplete=res;tx.onerror=function(){rej(tx.error);};tx.onabort=function(){rej(tx.error);};});})
-      .then(function(){marcarAlmacen(true,'idb');}).catch(function(){guardarLS(str);});
-  } else guardarLS(str);
+      .then(function(){guardados=Math.max(guardados,v);marcarAlmacen(true,'idb');}).catch(function(){guardarLS(str,v);});
+  } else guardarLS(str,v);
 }
-function guardarLS(str){try{localStorage.setItem(LS_DATOS,str);marcarAlmacen(true,'ls');}catch(e){marcarAlmacen(false);}}
+function guardarLS(str,v){try{localStorage.setItem(LS_DATOS,str);guardados=Math.max(guardados,v);marcarAlmacen(true,'ls');}catch(e){marcarAlmacen(false);}}
 function marcarAlmacen(ok,tipo){var antes=almacen.ok;almacen.ok=ok;if(tipo)almacen.tipo=tipo;if(antes!==ok)render();else pintarGuardado();}
 
 /* =================== Modelo =================== */
@@ -197,11 +206,12 @@ function cargarUI(){try{var o=JSON.parse(localStorage.getItem(LS_UI)||'null');if
   ui.dEq=+ui.dEq||0;}
 
 /* =================== Mensajes, deshacer, archivos, impresión =================== */
-var tMsg=null,tUndo=null;
-function flash(t){ui.msg=t;clearTimeout(tMsg);tMsg=setTimeout(function(){ui.msg=null;var el=document.getElementById('msg');if(el)el.remove();},6500);}
-function conDeshacer(texto,fn){var snap=JSON.stringify(S);fn();guardar();ui.undo={texto:texto,snap:snap};clearTimeout(tUndo);tUndo=setTimeout(function(){ui.undo=null;var el=document.getElementById('deshacer');if(el)el.remove();},15000);}
+/* Mensajes y «Deshacer» sin temporizadores: en tinta electrónica, quitarlos solos costaría un refresco extra y movería la pantalla.
+   Se ocultan en el siguiente cambio de pantalla, pasado su tiempo. */
+function flash(t){ui.msg=t;ui.msgHasta=Date.now()+6500;}
+function conDeshacer(texto,fn){var snap=JSON.stringify(S);fn();guardar();ui.undo={texto:texto,snap:snap,hasta:Date.now()+30000};}
 function textoGuardado(){var s=almacen.ok?'Guardado en esta tableta':'No se está guardando';if(!navigator.onLine)s+=' · sin conexión';return s;}
-function pintarGuardado(){var el=document.getElementById('guardado');if(el)el.textContent=textoGuardado();}
+function pintarGuardado(){var el=document.getElementById('guardado'),t=textoGuardado();if(el&&el.textContent!==t)el.textContent=t;}
 function respaldoPendiente(){
   var hay=S.grupos.some(function(g){return Object.keys(g.asistencia).length;})||Object.keys(S.disertaciones).length||Object.keys(S.bitacora).length>1;
   if(!hay)return null;if(!S.meta.ultimoRespaldo)return 'Respaldo pendiente';
