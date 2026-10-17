@@ -146,7 +146,7 @@ document.addEventListener('focusin',function(e){var el=e.target;
   if(toque.el!==el||Date.now()-toque.t>1500)return;
   var r=el.getBoundingClientRect(),h=window.innerHeight;if(r.top>=h*0.08&&r.bottom<=h*0.45)return;
   window.scrollTo(0,Math.max(0,window.pageYOffset+r.top-h*0.15));});
-document.addEventListener('click',function(e){var el=e.target.closest('[data-a]');if(!el||!$app.contains(el)||el.disabled)return;var fn=A[el.dataset.a];if(fn){e.preventDefault();fn(el,e);}});
+document.addEventListener('click',function(e){var el=e.target.closest('[data-a]');if(!el||!$app.contains(el)||el.disabled)return;var fn=A[el.dataset.a];if(fn){e.preventDefault();if(revisarDia())return;fn(el,e);}});
 document.addEventListener('submit',function(e){var f=e.target;if(!f.dataset||!f.dataset.form)return;e.preventDefault();var fn=ENVIOS[f.dataset.form];if(fn)fn();});
 function escribirLog(el){var g=grupoPorId(el.dataset.g),d=el.dataset.d;if(!g)return;var k=el.dataset.f.split('.')[1];
   var l=g.classLogs[d]||{objetivo:'',temas:'',obs:'',tarea:'',destacado:false};l[k]=el.type==='checkbox'?el.checked:el.value;
@@ -218,6 +218,12 @@ window.addEventListener('online',pintarGuardado);window.addEventListener('offlin
 if(mqAncho.addEventListener)mqAncho.addEventListener('change',function(){render();});
 window.addEventListener('pagehide',function(){persistir(true);});
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')persistir(true);});
+/* Si la agenda queda abierta de un día para otro (la Boox la congela en segundo plano y la retoma tal cual),
+   la lista pasa sola al día nuevo: así no se pasa lista en la fecha anterior por error. Una fecha elegida a mano no se toca. */
+var diaVisto=hoyISO();
+function revisarDia(){var h=hoyISO();if(h===diaVisto)return false;if(ui.fecha===diaVisto){ui.fecha=h;ui.regAbierto=false;}diaVisto=h;flash('Cambió el día: la agenda ya muestra la fecha de hoy ('+fLarga(h)+').');render();return true;}
+document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')revisarDia();});
+window.addEventListener('pageshow',revisarDia);
 
 /* =================== Inicio =================== */
 leerGuardado().then(function(raw){
