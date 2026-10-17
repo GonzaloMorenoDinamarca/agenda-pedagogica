@@ -1,4 +1,8 @@
   'c-dest':function(){ui.cDest=!ui.cDest;ui.cPag=0;render();},
+  /* Pantalla (tinta electrónica) */
+  'letra':function(el){var g=!document.documentElement.classList.contains('letra-grande');document.documentElement.classList.toggle('letra-grande',g);try{localStorage.setItem(APP+':letra',g?'grande':'normal');}catch(e){}el.setAttribute('aria-pressed',String(g));},
+  'hoja':function(el){var paso=Math.max(200,window.innerHeight-150);window.scrollTo(0,Math.max(0,window.pageYOffset+(+el.dataset.v)*paso));},
+  'limpiar':function(){limpiarPantalla();},
   'c-pag':function(el){ui.cPag=Math.max(0,ui.cPag+(+el.dataset.v));render();window.scrollTo(0,0);},
   'c-nuevo':function(){ui.cNuevo={g:ui.cGrupo||(grupoActual()||{}).id,d:hoyISO()};render();},
   'c-nuevo-cancelar':function(){ui.cNuevo=null;render();},
@@ -131,6 +135,17 @@ var ENVIOS={
 
 /* =================== Eventos =================== */
 var tBuscar=null;
+/* Un destello negro de pantalla completa obliga a la tinta electrónica a redibujar todo y borra las sombras (ghosting). */
+function limpiarPantalla(){var n=document.createElement('div');n.className='destello';n.setAttribute('aria-hidden','true');document.body.appendChild(n);setTimeout(function(){n.remove();},400);}
+/* Al tocar un campo de texto, lo deja de inmediato en la parte alta de la pantalla, antes de que aparezca el teclado:
+   así el navegador no desplaza la página con animación, que en tinta electrónica deja texto negro corrido. */
+var toque={el:null,t:0};
+document.addEventListener('pointerdown',function(e){toque.el=e.target;toque.t=Date.now();},true);
+document.addEventListener('focusin',function(e){var el=e.target;
+  if(!el||!(el.tagName==='TEXTAREA'||(el.tagName==='INPUT'&&/^(text|search|email|password|number)$/.test(el.type))))return;
+  if(toque.el!==el||Date.now()-toque.t>1500)return;
+  var r=el.getBoundingClientRect(),h=window.innerHeight;if(r.top>=h*0.08&&r.bottom<=h*0.45)return;
+  window.scrollTo(0,Math.max(0,window.pageYOffset+r.top-h*0.15));});
 document.addEventListener('click',function(e){var el=e.target.closest('[data-a]');if(!el||!$app.contains(el)||el.disabled)return;var fn=A[el.dataset.a];if(fn){e.preventDefault();fn(el,e);}});
 document.addEventListener('submit',function(e){var f=e.target;if(!f.dataset||!f.dataset.form)return;e.preventDefault();var fn=ENVIOS[f.dataset.form];if(fn)fn();});
 function escribirLog(el){var g=grupoPorId(el.dataset.g),d=el.dataset.d;if(!g)return;var k=el.dataset.f.split('.')[1];
