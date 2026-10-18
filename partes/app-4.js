@@ -21,7 +21,7 @@ function vDisResumen(d){
   var g=grupoPorId(d.grupoId),r=S.rubricas[d.rubricaId],h='<section class="seccion">'+cabDis(d,'resumen');
   if(!g||!r)return h+'<div class="alerta">'+(!g?'El curso de esta disertación fue eliminado.':'La rúbrica de esta disertación fue eliminada.')+'</div></section>';
   var F=filasDis(d,r,g),notas=F.filter(function(x){return x.res.nota!=null;}).map(function(x){return x.res.nota;});
-  var prom=notas.length?notas.reduce(function(a,b){return a+b;},0)/notas.length:null,apr=notas.filter(function(n){return n>=4;}).length;
+  var prom=notas.length?promedioDe(notas):null,apr=notas.filter(function(n){return n>=4;}).length;
   var asign={};d.equipos.forEach(function(eq){eq.integrantes.forEach(function(s){asign[s]=1;});});var sinEq=g.estudiantes.filter(function(e){return !asign[e.id];}).length;
   h+='<div class="stats"><div class="stat">Con nota<b>'+notas.length+' de '+F.length+'</b></div><div class="stat">Promedio<b>'+(prom!=null?num(prom,1):'—')+'</b></div><div class="stat">Aprobados<b>'+apr+(notas.length?' ('+Math.round(apr/notas.length*100)+' %)':'')+'</b></div><div class="stat">Rango<b>'+(notas.length?num(Math.min.apply(null,notas),1)+' – '+num(Math.max.apply(null,notas),1):'—')+'</b></div></div>';
   if(sinEq)h+='<p class="ayuda">'+sinEq+(sinEq===1?' estudiante del curso no está':' estudiantes del curso no están')+' en ningún equipo.</p>';
@@ -42,12 +42,30 @@ function nombreColumna(d,g){var np=d.notasPasadas;if(np){var c=cal(g).columns.fi
 /* =================== Vista: Rúbricas =================== */
 function usosRubrica(id){return Object.keys(S.disertaciones).filter(function(k){return S.disertaciones[k].rubricaId===id;}).length;}
 function vRubricas(){
+  if(ui.rVer)return vRubricaVer(ui.rVer);
   var ids=Object.keys(S.rubricas).sort(function(a,b){return cmp(S.rubricas[a].creado,S.rubricas[b].creado);});
-  var h='<section class="seccion"><button type="button" class="btn quiet volver" data-a="d-ver" data-v="lista">← Disertaciones</button><div class="lista-cab"><h2 class="titulo-sec">Rúbricas</h2><button type="button" class="btn primary" data-a="d-ver" data-v="nueva-rubrica">+ Nueva rúbrica</button></div>';
+  var h='<section class="seccion"><button type="button" class="btn quiet volver" data-a="d-ver" data-v="lista">← Disertaciones</button><div class="lista-cab"><h2 class="titulo-sec">Rúbricas</h2><button type="button" class="btn" data-a="d-ver" data-v="nueva-rubrica">+ Nueva rúbrica</button></div>'+
+    '<p class="ayuda">«Ver» muestra la rúbrica tal como se usa al evaluar. «Editar» sirve para cambiar sus textos y puntajes.</p>';
   if(!ids.length)h+='<div class="vacio"><h3>Sin rúbricas</h3><button type="button" class="btn primary" data-a="d-ver" data-v="nueva-rubrica">+ Nueva rúbrica</button></div>';
   ids.forEach(function(id){var r=S.rubricas[id],u=usosRubrica(id);
     h+='<div class="dis-card"><div><h3>'+esc(r.nombre||'Sin nombre')+'</h3><p class="ayuda">'+pl(r.criterios.length,'criterio','criterios')+(critInd(r).length?' ('+pl(critInd(r).length,'individual','individuales')+')':'')+' · '+esc(escalaTexto(r))+'</p><p class="ayuda">'+(u?'Usada en '+u+(u===1?' disertación':' disertaciones'):'Sin usar')+'</p></div>'+
-      '<div class="acciones"><button type="button" class="btn" data-a="r-editar" data-id="'+esc(id)+'">Editar</button><button type="button" class="btn" data-a="r-dup" data-id="'+esc(id)+'">Duplicar</button><button type="button" class="btn quiet" data-a="r-borrar" data-id="'+esc(id)+'">Eliminar</button></div></div>';});
+      '<div class="acciones"><button type="button" class="btn primary" data-a="r-ver" data-id="'+esc(id)+'">Ver</button><button type="button" class="btn" data-a="r-editar" data-id="'+esc(id)+'">Editar</button><button type="button" class="btn" data-a="r-dup" data-id="'+esc(id)+'">Duplicar</button><button type="button" class="btn quiet" data-a="r-borrar" data-id="'+esc(id)+'">Eliminar</button></div></div>';});
+  return h+'</section>';
+}
+/* «Ver» una rúbrica: las mismas tarjetas de «Evaluar», solo para mirar, y el atajo para usarla en una disertación. */
+function vRubricaVer(id){
+  var r=S.rubricas[id];if(!r){ui.rVer=null;return vRubricas();}
+  function fila(k){var n=r.criterios.indexOf(k)+1;
+    return '<li class="criterio"><h4><span class="c-num">C'+n+'</span>'+esc(k.nombre||'Criterio sin nombre')+(k.peso>1?'<span class="peso">× '+k.peso+'</span>':'')+'</h4>'+(k.ayuda?'<p class="ayuda">'+esc(k.ayuda)+'</p>':'')+
+      '<div class="niveles" style="--n:'+r.niveles.length+'">'+r.niveles.map(function(lv,li){return '<div class="nivel nivel-ver"><span class="n-cab"><b>'+esc(lv.nombre)+'</b><span>'+num(ptsCrit(r,k,li))+' pts</span></span>'+(k.descriptores[li]?'<span class="n-desc">'+esc(k.descriptores[li])+'</span>':'')+'</div>';}).join('')+'</div></li>';}
+  var ke=critEq(r),ki=critInd(r);
+  var h='<section class="seccion"><button type="button" class="btn quiet volver" data-a="r-ver-cerrar">← Rúbricas</button>'+
+    '<div class="det-cab"><div><p class="eyebrow">Rúbrica</p><h2>'+esc(r.nombre||'Sin nombre')+'</h2>'+(r.objetivo?'<p class="proyecto">'+esc(r.objetivo)+'</p>':'')+'</div></div>'+
+    '<p class="ayuda">'+esc(escalaTexto(r))+'</p>'+
+    '<div class="acciones"><button type="button" class="btn primary" data-a="d-nueva" data-r="'+esc(id)+'">Usar en una disertación nueva</button><button type="button" class="btn" data-a="r-editar" data-id="'+esc(id)+'">Editar textos</button></div>'+
+    '<p class="ayuda">Así se ve en «Evaluar»: ahí tocas el nivel de cada criterio y la nota se calcula sola.</p>';
+  if(ke.length)h+='<h3 class="titulo-sec">Criterios del equipo</h3><ol class="criterios">'+ke.map(fila).join('')+'</ol>';
+  if(ki.length)h+='<h3 class="titulo-sec">Criterios individuales</h3><p class="ayuda">Se marcan para cada integrante.</p><ol class="criterios">'+ki.map(fila).join('')+'</ol>';
   return h+'</section>';
 }
 function vNuevaRub(){
@@ -60,7 +78,8 @@ function vNuevaRub(){
 function vEditorRub(){
   var d=ui.rDraft;if(!d){ui.dVista='rubricas';return vRubricas();}
   var usos=ui.rId?usosRubrica(ui.rId):0;
-  var h='<section class="seccion"><button type="button" class="btn quiet volver" data-a="r-cancelar">← Rúbricas</button><form class="editor" data-form="rub"><h2>'+(ui.rId?'Editar rúbrica':'Nueva rúbrica')+'</h2>'+vError();
+  var h='<section class="seccion"><button type="button" class="btn quiet volver" data-a="r-cancelar">← Rúbricas</button><form class="editor" data-form="rub"><h2>'+(ui.rId?'Editar rúbrica':'Nueva rúbrica')+'</h2>'+
+    '<p class="ayuda">Aquí se cambian los textos y puntajes. Para evaluar con esta rúbrica: Disertaciones → + Nueva disertación → elígela en «Rúbrica» → «Evaluar».</p>'+vError();
   h+='<div class="campo"><label for="r-nombre">Nombre</label><input type="text" id="r-nombre" data-f="rub.nombre" value="'+esc(d.nombre)+'"></div>';
   h+='<div class="campo"><label for="r-obj">Objetivo (opcional)</label><textarea id="r-obj" rows="2" data-f="rub.objetivo">'+esc(d.objetivo||'')+'</textarea></div>';
   h+='<div class="campo"><label for="r-hab">Habilidad (opcional)</label><input type="text" id="r-hab" data-f="rub.habilidad" value="'+esc(d.habilidad||'')+'"></div>';
