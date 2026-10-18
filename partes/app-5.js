@@ -23,7 +23,7 @@ function parsearLista(txt,cursoDef){
 }
 function tablaLista(g,f){
   var est=ordenarEst(g.estudiantes),att=g.asistencia[f]||{},c=conteoDia(g,f);
-  return '<p>'+c.total+' estudiantes · '+c.p+' presentes · '+c.a+' ausentes · '+c.l+' atrasos'+(c.sin?' · '+c.sin+' sin marcar':'')+'</p><table><thead><tr><th>N°</th><th>Apellidos</th><th>Nombres</th><th>Curso</th><th>Asistencia</th></tr></thead><tbody>'+
+  return '<p>'+pl(c.total,'estudiante','estudiantes')+' · '+pl(c.p,'presente','presentes')+' · '+pl(c.a,'ausente','ausentes')+' · '+pl(c.l,'atraso','atrasos')+(c.sin?' · '+c.sin+' sin marcar':'')+'</p><table><thead><tr><th>N°</th><th>Apellidos</th><th>Nombres</th><th>Curso</th><th>Asistencia</th></tr></thead><tbody>'+
     est.map(function(e,i){return '<tr><td>'+(i+1)+'</td><td>'+esc(apellidos(e))+'</td><td>'+esc(e.n)+'</td><td>'+esc(e.c)+'</td><td>'+(ATT[att[e.id]]||'—')+'</td></tr>';}).join('')+'</tbody></table>';
 }
 function exportarAsistencia(g,modo){
@@ -94,7 +94,7 @@ function importarNotasCSV(file,g){
       var ok=0,nf=0;
       filas.slice(1).forEach(function(f){var ap=normNombre(f[1]),nn=normNombre(f[2]);var e=g.estudiantes.filter(function(s){return normNombre(apellidos(s))===ap&&normNombre(s.n)===nn;})[0];if(!e){nf++;return;}ok++;
         if(!c.data[e.id])c.data[e.id]={};nombres.forEach(function(n,j){var col=buscarColumna(c,n);var v=parseNota(f[ini+j]);if(col&&v!=null)c.data[e.id][col.id]=v;});});
-      flash('Notas importadas para '+ok+' estudiantes'+(nf?'; '+nf+' filas no coincidieron con la nómina':'')+'.');
+      flash('Notas importadas para '+pl(ok,'estudiante','estudiantes')+(nf?'; '+(nf===1?'1 fila no coincidió':nf+' filas no coincidieron')+' con la nómina':'')+'.');
     });
     render();
   }).catch(function(){flash('No se pudo leer el archivo.');render();});
@@ -188,7 +188,8 @@ function traerDeCuenta(email,pass){
 
 /* =================== Acciones =================== */
 var A={
-  'tab':function(el){if(el.dataset.v!=='asistencia')ui.ficha=null;ui.regAbierto=false;irA(el.dataset.v);},
+  /* Al cambiar de pestaña, el aviso de la anterior se va (era de esa pantalla); «Deshacer» sigue disponible. */
+  'tab':function(el){if(el.dataset.v!=='asistencia')ui.ficha=null;ui.regAbierto=false;ui.msg=null;irA(el.dataset.v);},
   'vista':function(el){ui[el.dataset.k]=el.dataset.v;ui.formError=null;ui.regAbierto=false;render();arriba();},
   'deshacer':function(){if(!ui.undo)return;S=normalizar(JSON.parse(ui.undo.snap));ui.undo=null;persistir();flash('Se deshizo el cambio.');render();},
   'copia-cerrar':function(){ui.copiaManual=null;render();},
@@ -225,7 +226,7 @@ var A={
   'exp-nomina':function(){var g=grupoActual();descargar('nomina_'+slug(g.asignatura)+'_'+slug(g.grupo)+'.csv',aCSV([['N° lista','Apellido Paterno','Apellido Materno','Nombre(s)','Curso']].concat(ordenarEst(g.estudiantes).map(function(e,i){return [i+1,e.ap,e.am,e.n,e.c];}))),'text/csv;charset=utf-8');render();},
   'imp-lista':function(){var g=grupoActual();imprimir('Lista de asistencia · '+fLarga(ui.fecha),nombreGrupo(g),tablaLista(g,ui.fecha));},
   'imp-stats':function(){var g=grupoActual(),D=datosStats(g),hasCal=cal(g).columns.length>0;
-    imprimir('Estadísticas de asistencia',nombreGrupo(g),'<p>'+D.fechas.length+' clases · asistencia promedio '+(D.prom!=null?D.prom+' %':'—')+' · '+D.bajo+' bajo 75 %</p><table><thead><tr><th>Estudiante</th><th>Curso</th><th>Asistencia</th><th>P</th><th>A</th><th>T</th><th>Clases</th>'+(hasCal?'<th>Prom. notas</th>':'')+'</tr></thead><tbody>'+
+    imprimir('Estadísticas de asistencia',nombreGrupo(g),'<p>'+pl(D.fechas.length,'clase','clases')+' · asistencia promedio '+(D.prom!=null?D.prom+' %':'—')+' · '+D.bajo+' bajo 75 %</p><table><thead><tr><th>Estudiante</th><th>Curso</th><th>Asistencia</th><th>P</th><th>A</th><th>T</th><th>Clases</th>'+(hasCal?'<th>Prom. notas</th>':'')+'</tr></thead><tbody>'+
       D.filas.map(function(x){return '<tr><td>'+esc(apellidos(x.e))+', '+esc(x.e.n)+'</td><td>'+esc(x.e.c)+'</td><td>'+x.s.pct+' %</td><td>'+x.s.p+'</td><td>'+x.s.a+'</td><td>'+x.s.l+'</td><td>'+x.s.r+'</td>'+(hasCal?'<td>'+(x.prom!=null?num(x.prom,1):'—')+'</td>':'')+'</tr>';}).join('')+'</tbody></table>');},
   'pegar-agregar':function(){var g=grupoActual();var l=parsearLista(ui.pegar,ui.pegarCurso);if(!l.length){flash('No encontré nombres para agregar. Escribe uno por línea.');render();foco('pegar');return;}
     var n=0;conDeshacer('Se agregaron estudiantes.',function(){n=agregarEstudiantes(g,l);});ui.pegar='';flash(n+(n===1?' estudiante agregado':' estudiantes agregados')+' y ordenados por curso y apellido.');render();},
@@ -237,9 +238,9 @@ var A={
       p.estudiantes.forEach(function(e){var ex=por[claveEst(e)];if(ex){if(ex.c!==normCurso(e.c)){ex.c=normCurso(e.c);act++;}}else{g.estudiantes.push({id:uid(),ap:e.ap,am:e.am,n:e.n,c:normCurso(e.c)});nuevos++;}});
       if(p.profesor)g.profesor=p.profesor;g.estudiantes.sort(function(a,b){return cmpEst(a,b);});});
     var fuera=g.estudiantes.filter(function(e){return !p.estudiantes.some(function(x){return claveEst(x)===claveEst(e);});}).length;
-    ui.pdfPend=null;ui.grupoId=g.id;ui.tab='asistencia';ui.aVista='lista';flash('Nómina actualizada: '+nuevos+' agregados, '+act+' con curso corregido.'+(fuera?' '+fuera+' de la lista no aparecen en el PDF; puedes quitarlos desde su ficha.':''));render();},
+    ui.pdfPend=null;ui.grupoId=g.id;ui.tab='asistencia';ui.aVista='lista';flash('Nómina actualizada: '+pl(nuevos,'agregado','agregados')+', '+act+' con curso corregido.'+(fuera?' '+fuera+' de la lista no aparecen en el PDF; puedes quitarlos desde su ficha.':''));render();},
   'pdf-nuevo':function(){var p=ui.pdfPend;var g={id:uid(),asignatura:p.asignatura||'Sin asignatura',grupo:p.grupo||'',nivel:String(p.nivel||'4'),profesor:p.profesor||'',estudiantes:[],asistencia:{},notas:{},classLogs:{},calificaciones:{columns:[],data:{}}};
-    agregarEstudiantes(g,p.estudiantes);conDeshacer('Se creó el curso '+nombreGrupo(g)+'.',function(){S.grupos.push(g);});ui.pdfPend=null;ui.grupoId=g.id;ui.tab='asistencia';ui.aVista='lista';flash('Curso creado con '+g.estudiantes.length+' estudiantes.');render();},
+    agregarEstudiantes(g,p.estudiantes);conDeshacer('Se creó el curso '+nombreGrupo(g)+'.',function(){S.grupos.push(g);});ui.pdfPend=null;ui.grupoId=g.id;ui.tab='asistencia';ui.aVista='lista';flash('Curso creado con '+pl(g.estudiantes.length,'estudiante','estudiantes')+'.');render();},
   'pdf-cancelar':function(){ui.pdfPend=null;render();},
   'ir-fecha':function(el){ui.fecha=el.dataset.v;ui.aVista='lista';render();window.scrollTo(0,0);},
   /* Notas */

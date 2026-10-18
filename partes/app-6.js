@@ -9,7 +9,7 @@
   'c-destacar':function(el){var g=grupoPorId(el.dataset.g),l=g&&g.classLogs[el.dataset.d];if(!l)return;l.destacado=!l.destacado;guardar();render();},
   'c-ir':function(el){ui.grupoId=el.dataset.g;ui.fecha=el.dataset.d;ui.aVista='lista';ui.ficha=null;irA('asistencia');},
   'imp-clases':function(){var l=logsFiltrados();if(!l.length){flash('No hay registros con estos filtros.');render();return;}
-    imprimir('Registro de clases',l.length+' registros','<table><thead><tr><th>Fecha</th><th>Curso</th><th>Contenido de la clase</th></tr></thead><tbody>'+l.map(function(x){return '<tr><td>'+esc(fLarga(x.d))+(x.l.destacado?'<br>★ destacado':'')+'</td><td>'+esc(nombreGrupo(x.g))+'</td><td>'+(x.l.objetivo?'<b>Objetivo:</b> '+esc(x.l.objetivo)+'<br>':'')+(x.l.temas?'<b>Temas:</b> '+esc(x.l.temas)+'<br>':'')+(x.l.obs?'<b>Obs.:</b> '+esc(x.l.obs)+'<br>':'')+(x.l.tarea?'<b>Pendiente:</b> '+esc(x.l.tarea):'')+'</td></tr>';}).join('')+'</tbody></table>');},
+    imprimir('Registro de clases',pl(l.length,'registro','registros'),'<table><thead><tr><th>Fecha</th><th>Curso</th><th>Contenido de la clase</th></tr></thead><tbody>'+l.map(function(x){return '<tr><td>'+esc(fLarga(x.d))+(x.l.destacado?'<br>★ destacado':'')+'</td><td>'+esc(nombreGrupo(x.g))+'</td><td>'+(x.l.objetivo?'<b>Objetivo:</b> '+esc(x.l.objetivo)+'<br>':'')+(x.l.temas?'<b>Temas:</b> '+esc(x.l.temas)+'<br>':'')+(x.l.obs?'<b>Obs.:</b> '+esc(x.l.obs)+'<br>':'')+(x.l.tarea?'<b>Pendiente:</b> '+esc(x.l.tarea):'')+'</td></tr>';}).join('')+'</tbody></table>');},
   /* Disertaciones */
   'd-nueva':function(){var g=grupoActual();var rid=S.rubricas['expo-original']?'expo-original':Object.keys(S.rubricas)[0];ui.dForm={titulo:'',grupoId:g?g.id:'',rubricaId:rid||'',fecha:hoyISO()};ui.formError=null;ui.dVista='nueva';irA('disertaciones');foco('dn-tit');},
   'd-ver':function(el){if(el.dataset.id){if(el.dataset.id!==ui.dId){ui.dEq=0;crono.acumulado=0;crono.eqId=null;}ui.dId=el.dataset.id;}if(crono.inicio&&el.dataset.v!=='evaluar')detenerCrono(true);ui.dVista=el.dataset.v;ui.formError=null;render();window.scrollTo(0,0);},
@@ -100,7 +100,7 @@ var ENVIOS={
     g.asignatura=d.asignatura.trim();g.grupo=d.grupo.trim();g.nivel=d.nivel;g.profesor=d.profesor.trim();guardar();ui.cursoDatos=null;ui.formError=null;flash('Datos del curso guardados.');render();},
   'curso-nuevo':function(){var d=ui.cursoForm;if(!d.asignatura.trim()){ui.formError='Escribe la asignatura.';render();foco('cn-asig');return;}
     var g={id:uid(),asignatura:d.asignatura.trim(),grupo:d.grupo.trim(),nivel:d.nivel,profesor:'',estudiantes:[],asistencia:{},notas:{},classLogs:{},calificaciones:{columns:[],data:{}}};
-    agregarEstudiantes(g,parsearLista(d.lista,''));S.grupos.push(g);guardar();ui.cursoForm=null;ui.formError=null;ui.grupoId=g.id;ui.tab='asistencia';ui.aVista=g.estudiantes.length?'lista':'curso';flash('Curso creado'+(g.estudiantes.length?' con '+g.estudiantes.length+' estudiantes':'')+'.');render();window.scrollTo(0,0);},
+    agregarEstudiantes(g,parsearLista(d.lista,''));S.grupos.push(g);guardar();ui.cursoForm=null;ui.formError=null;ui.grupoId=g.id;ui.tab='asistencia';ui.aVista=g.estudiantes.length?'lista':'curso';flash('Curso creado'+(g.estudiantes.length?' con '+pl(g.estudiantes.length,'estudiante','estudiantes'):'')+'.');render();window.scrollTo(0,0);},
   'eval':function(){var d=ui.evalForm,nom=d.nombre.trim();if(!nom){ui.formError='Escribe el nombre de la evaluación.';render();foco('ev-nombre');return;}
     var g=grupoPorId(ui.nSel.slice(2));if(buscarColumna(cal(g),nom)){ui.formError='Ya existe una evaluación con ese nombre en este curso.';render();foco('ev-nombre');return;}
     cal(g).columns.push({id:uid(),name:nom,date:d.fecha||''});guardar();ui.evalForm=null;ui.formError=null;flash('Evaluación «'+nom+'» agregada.');render();},
@@ -114,7 +114,7 @@ var ENVIOS={
     for(var i=0;i<d.niveles.length;i++){var n=d.niveles[i];if(!String(n.nombre||'').trim()||n.puntos===''||!isFinite(n.puntos)||n.puntos<0){ui.formError='Revisa el nivel '+(i+1)+': necesita nombre y puntos.';render();foco('r-n'+i);return;}n.puntos=+n.puntos;}
     for(var j=0;j<d.criterios.length;j++){if(!String(d.criterios[j].nombre||'').trim()){ui.formError='Escribe el nombre del criterio C'+(j+1)+'.';render();foco('r-c'+j);return;}}
     if(maxDe(d,d.criterios)<=0){ui.formError='El puntaje máximo debe ser mayor que cero.';render();return;}
-    d.minutos=d.minutos&&+d.minutos>0?Math.round(+d.minutos):null;if(!d.minutos)d.criterios.forEach(function(k){k.auto=null;});
+    d.minutos=d.minutos&&+d.minutos>0?Math.round(+d.minutos):null;if(!d.minutos)d.criterios.forEach(function(k){k.auto=null;});else ajustarTiempo(d);
     prepRubrica(d);
     if(ui.rId){d.actualizado=ahora();S.rubricas[ui.rId]=d;}else{d.creado=ahora();S.rubricas[uid()]=d;}
     guardar();ui.rDraft=null;ui.rId=null;ui.dVista='rubricas';ui.formError=null;flash('Rúbrica guardada.');render();window.scrollTo(0,0);},
@@ -176,7 +176,8 @@ document.addEventListener('input',function(e){
       if(p[1]==='nivel'){var n=r.niveles[+p[2]];if(n){if(p[3]==='puntos'){var x=parseFloat(String(v).replace(',','.'));n.puntos=isFinite(x)?x:'';}else n.nombre=v;}}
       else if(p[1]==='crit'){var k=r.criterios[+p[2]];if(k){if(p[3]==='desc')k.descriptores[+p[4]]=v;else if(p[3]==='peso')k.peso=+v||1;else k[p[3]]=v;}}
       else if(p[1]==='exigencia')r.exigencia=parseFloat(v)||0.6;
-      else if(p[1]==='minutos'){var hadMin=!!r.minutos;r.minutos=v;if(hadMin!==!!v){render();return;}}
+      else if(p[1]==='minutos'){var hadMin=!!r.minutos;r.minutos=v;var aj=ajustarTiempo(r);if(hadMin!==!!v){render();return;}
+        aj.forEach(function(j){var k=r.criterios[j],e=document.getElementById('r-c'+j);if(e)e.value=k.nombre;k.descriptores.forEach(function(t,i){var x=document.getElementById('r-c'+j+'d'+i);if(x)x.value=t;});});}
       else r[p[1]]=v;
       var t=document.getElementById('r-total');if(t)t.textContent=escalaTexto(r);return;
     case 'team':if(ui.teamDraft)ui.teamDraft[p[1]]=v;return;
