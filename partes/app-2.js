@@ -11,9 +11,8 @@ function vCab(){
   var pend=respaldoPendiente();
   return '<header class="cab"><div class="marca"><h1>Agenda <span>Pedagógica</span></h1><p class="sub">Liceo A-1 · Arica</p></div>'+
     '<div class="cab-der"><p class="cab-fecha">'+esc(cap(fDia(hoyISO())))+'</p><p class="guardado" id="guardado">'+esc(textoGuardado())+'</p>'+
-    '<button type="button" class="link" data-a="tab" data-v="respaldo">'+esc(pend||'Respaldo y datos')+'</button>'+
-    '<button type="button" class="btn chico" data-a="letra" aria-pressed="'+document.documentElement.classList.contains('letra-grande')+'">Letra grande</button></div></header>'+
-    '<nav class="hojas" aria-label="Pasar página"><button type="button" class="btn" data-a="hoja" data-v="-1" aria-label="Subir una página">▲ Subir</button><button type="button" class="btn quiet" data-a="limpiar">Limpiar pantalla</button><button type="button" class="btn" data-a="hoja" data-v="1" aria-label="Bajar una página">Bajar ▼</button></nav>'+
+    '<button type="button" class="link" data-a="tab" data-v="respaldo">'+esc(pend||'Respaldo y datos')+'</button></div></header>'+
+    '<nav class="hojas" aria-label="Pasar página"><button type="button" class="btn" data-a="hoja" data-v="-1" aria-label="Subir una página">▲ Subir</button><button type="button" class="btn" data-a="hoja" data-v="1" aria-label="Bajar una página">Bajar ▼</button></nav>'+
     '<nav class="pestanas" aria-label="Secciones">'+TABS.map(function(t){return '<button type="button" class="pest" data-a="tab" data-v="'+t[0]+'" aria-pressed="'+(ui.tab===t[0])+'">'+t[1]+'</button>';}).join('')+'</nav>'+
     (ui.actualizacion?'<div class="deshacer"><span>Hay una versión nueva de la agenda.</span><button type="button" class="btn primary chico" data-a="recargar">Actualizar ahora</button></div>':'')+
     (almacen.ok?'':'<p class="alerta" role="alert">Este navegador no está guardando los datos. Descarga un respaldo ahora en «Respaldo y datos» y abre la agenda desde la app instalada.</p>')+

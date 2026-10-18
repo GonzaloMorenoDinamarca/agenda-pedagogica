@@ -1,8 +1,6 @@
   'c-dest':function(){ui.cDest=!ui.cDest;ui.cPag=0;render();},
-  /* Pantalla (tinta electrónica) */
-  'letra':function(el){var g=!document.documentElement.classList.contains('letra-grande');document.documentElement.classList.toggle('letra-grande',g);try{localStorage.setItem(APP+':letra',g?'grande':'normal');}catch(e){}el.setAttribute('aria-pressed',String(g));},
+  /* Pasar página de una vez (tinta electrónica: un solo refresco, sin arrastre) */
   'hoja':function(el){var paso=Math.max(200,window.innerHeight-150);window.scrollTo(0,Math.max(0,window.pageYOffset+(+el.dataset.v)*paso));},
-  'limpiar':function(){limpiarPantalla();},
   'c-pag':function(el){ui.cPag=Math.max(0,ui.cPag+(+el.dataset.v));render();window.scrollTo(0,0);},
   'c-nuevo':function(){ui.cNuevo={g:ui.cGrupo||(grupoActual()||{}).id,d:hoyISO()};render();},
   'c-nuevo-cancelar':function(){ui.cNuevo=null;render();},
@@ -135,8 +133,6 @@ var ENVIOS={
 
 /* =================== Eventos =================== */
 var tBuscar=null;
-/* Un destello negro de pantalla completa obliga a la tinta electrónica a redibujar todo y borra las sombras (ghosting). */
-function limpiarPantalla(){var n=document.createElement('div');n.className='destello';n.setAttribute('aria-hidden','true');document.body.appendChild(n);setTimeout(function(){n.remove();},400);}
 /* Al tocar un campo de texto, lo deja de inmediato en la parte alta de la pantalla, antes de que aparezca el teclado:
    así el navegador no desplaza la página con animación, que en tinta electrónica deja texto negro corrido. */
 var toque={el:null,t:0};
