@@ -110,6 +110,10 @@ function rubricaPropuesta(){
     crit('p10','Contacto visual y postura',1,'individual',['Mira al público durante casi toda su intervención y se mantiene de frente a la audiencia.','Mira al público la mayor parte del tiempo, pero a veces da la espalda o se apoya.','Mira principalmente la pantalla o sus apuntes.','No mira al público.'])
   ]};
 }
+/* Igual a la propuesta mejorada, pero con un C1 general: sirve para cualquier unidad sin escribir nada. */
+function rubricaGeneral(){var r=rubricaPropuesta();r.nombre='Disertación científica (cualquier tema)';r.plantilla='general';r.objetivo='';
+  r.criterios[0]=crit('g1','Explicación del contenido científico',2,'equipo',['Explica correctamente los conceptos clave del tema y cómo se relacionan entre sí, con un ejemplo concreto.','Explica correctamente los conceptos clave, pero no los relaciona entre sí.','Explica solo algunos conceptos clave, o con imprecisiones.','Menciona el tema sin explicar sus conceptos clave, o comete errores conceptuales importantes.'],{ayuda:'Sirve para cualquier tema. Para más precisión, duplícala y nombra los conceptos clave de la unidad.'});
+  return r;}
 function rubricaVacia(){return {nombre:'',plantilla:null,objetivo:'',habilidad:'',exigencia:0.6,minutos:null,niveles:clonar(NIVELES4),criterios:[crit(uid(),'',1,'equipo',['','','',''])]};}
 
 /* =================== Almacenamiento =================== */
@@ -180,6 +184,7 @@ function normalizar(o){
     ['rubricas','disertaciones','equipos','bitacora'].forEach(function(k){if(o[k]&&typeof o[k]==='object'&&!Array.isArray(o[k]))r[k]=o[k];});
   }
   r.grupos.forEach(prepGrupo);
+  if(!r.meta.rubricaGeneral){if(!r.rubricas['expo-general']){r.rubricas['expo-general']=rubricaGeneral();r.rubricas['expo-general'].creado=ahora();}r.meta.rubricaGeneral=1;}
   Object.keys(r.rubricas).forEach(function(id){prepRubrica(r.rubricas[id]);});
   Object.keys(r.disertaciones).forEach(function(id){prepDis(r.disertaciones[id]);});
   return r;
@@ -190,6 +195,7 @@ function semilla(s){
   s.rubricas['expo-original']=rubricaOriginal();
   s.rubricas['expo-propuesta']=rubricaPropuesta();
   s.rubricas['expo-propuesta'].creado=new Date(Date.now()+1).toISOString();
+  s.rubricas['expo-general']=rubricaGeneral();s.rubricas['expo-general'].creado=new Date(Date.now()+2).toISOString();s.meta.rubricaGeneral=1;
   var lib=libretaLocal();
   if(lib&&Object.keys(lib.equipos).length){s.equipos=clonar(lib.equipos);s.bitacora=clonar(lib.bitacora||{});s.meta.migradoLibreta=ahora();return;}
   var t0=Date.now();function t(k){return new Date(t0+k).toISOString();}
