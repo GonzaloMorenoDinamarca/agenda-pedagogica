@@ -239,14 +239,17 @@ dl.campos dd{margin:0 0 6px;white-space:pre-wrap;overflow-wrap:anywhere}
 @media (max-width:699px){.niveles{grid-template-columns:minmax(0,1fr)}}
 .nivel{text-align:left;border:2px solid var(--ink);border-radius:4px;background:var(--paper);color:var(--ink);padding:10px 12px;min-height:60px;cursor:pointer;font:inherit;display:flex;flex-direction:column;gap:6px;min-width:0}
 .nivel[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
-.n-cab{display:flex;justify-content:space-between;gap:8px;font-weight:700;font-size:var(--fs-sm);line-height:1.2}
-.n-cab span{flex:none}
+/* Nombre del nivel y puntaje: el puntaje va a la derecha de la última línea y, si no cabe, baja a la siguiente (nunca se sale de la tarjeta). */
+.n-cab{display:block;font-weight:700;font-size:var(--fs-sm);line-height:1.2}
+.n-cab::after{content:"";display:block;clear:both}
+.n-cab span{float:right;margin-left:8px;white-space:nowrap}
 .n-desc{font-size:var(--fs-xs);line-height:1.4;overflow-wrap:anywhere}
 .n-sug{font-size:var(--fs-xs);font-weight:700;text-decoration:underline}
-.ind-fila{display:grid;grid-template-columns:minmax(150px,1.2fr) minmax(0,4fr);gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--line-soft)}
+/* Columna del nombre más angosta: así cada nivel tiene ancho para «Medianamente» completo con letra de 21 px. */
+.ind-fila{display:grid;grid-template-columns:minmax(0,.75fr) minmax(0,4fr);gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--line-soft)}
 .ind-fila .nom{font-weight:700;font-size:var(--fs-sm);overflow-wrap:anywhere}
 .ind-niv{display:grid;grid-template-columns:repeat(var(--n,4),minmax(0,1fr));gap:6px}
-.ind-niv .nivel{min-height:48px;padding:6px 8px;justify-content:center}
+.ind-niv .nivel{min-height:48px;padding:6px;justify-content:center}
 @media (max-width:699px){.ind-fila{grid-template-columns:minmax(0,1fr)}}
 details.desc summary{cursor:pointer;font-weight:700;font-size:var(--fs-sm);min-height:40px;display:flex;align-items:center}
 details.desc ul{margin:4px 0 8px;padding-left:1.2em;font-size:var(--fs-sm)}
@@ -278,6 +281,8 @@ details.desc ul{margin:4px 0 8px;padding-left:1.2em;font-size:var(--fs-sm)}
 .etapa small{font-weight:400}
 .etapa.hecha{background:var(--fill)}
 .etapa[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+/* Con la Boox vertical la columna del detalle es angosta: la letra de las etapas se ajusta apenas para que «Investigación» y «Presentación» no se corten. */
+@media (min-width:760px){.etapa{font-size:min(var(--fs-xs), calc(2.2vw - 3.2px))}}
 @media (max-width:560px){.etapas{grid-template-columns:minmax(0,1fr)}.etapa{border-left:0;border-top:2px solid var(--ink);flex-direction:row;justify-content:flex-start;gap:10px;padding:0 14px;min-height:48px}.etapa:first-child{border-top:0}}
 .estados{display:flex;flex-wrap:wrap;gap:8px}
 .registros{display:flex;flex-direction:column;gap:16px}
