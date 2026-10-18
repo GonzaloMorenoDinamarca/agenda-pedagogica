@@ -20,9 +20,8 @@
   color-scheme:light;
 }
 *,*::before,*::after{box-sizing:border-box;animation:none!important;transition:none!important}
-html{font-size:16px;-webkit-text-size-adjust:100%;scroll-behavior:auto}
-/* Letra grande: todo crece unos 3 px (el texto normal pasa de 18 a 21 px). */
-html.letra-grande{font-size:19px}
+/* Base de 19 px: el texto corriente queda en 21 px, cómodo de leer en la Boox a la distancia de la mano. */
+html{font-size:19px;-webkit-text-size-adjust:100%;scroll-behavior:auto}
 /* Sin efecto elástico al llegar al borde: en tinta electrónica esa animación deja sombras. */
 html,body{overscroll-behavior:none}
 body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font-body);font-size:var(--fs-md);line-height:1.5;
@@ -42,9 +41,8 @@ p{margin:0}
 .sub{margin-top:6px;font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft);font-weight:700}
 .cab-der{display:flex;flex-direction:column;align-items:flex-end;gap:4px;text-align:right}
 /* Barra fija para pasar página: cada toque mueve una pantalla completa de una vez (un solo refresco, sin arrastre ni sombras). */
-.hojas{position:fixed;left:0;right:0;bottom:0;z-index:5;display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;background:var(--paper);border-top:2px solid var(--ink);padding:6px max(16px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px))}
+.hojas{position:fixed;left:0;right:0;bottom:0;z-index:5;display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:center;background:var(--paper);border-top:2px solid var(--ink);padding:6px max(16px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px))}
 .hojas .btn{min-height:52px}
-.destello{position:fixed;inset:0;z-index:100;background:#000}
 .cab-fecha{font-family:var(--font-display);font-weight:700;font-size:var(--fs-lg);line-height:1.1}
 .guardado{font-size:var(--fs-xs);color:var(--ink-soft)}
 .pestanas{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));border:2px solid var(--ink);border-radius:4px;overflow:hidden}
