@@ -37,7 +37,7 @@ function vHoyDis(){
     .filter(function(x){return x.pr.total===0||x.pr.listos<x.pr.total||(x.d.fecha&&x.d.fecha>=sumarDias(hoy,-7));})
     .sort(function(a,b){return cmp(a.d.fecha,b.d.fecha);}).slice(0,5);
   return '<div class="panel"><h3>Disertaciones</h3>'+(ds.length?'<ul class="lista-simple">'+ds.map(function(x){var g=grupoPorId(x.d.grupoId);
-    return '<li><button type="button" class="item-btn" data-a="d-abrir" data-id="'+esc(x.id)+'"><b>'+esc(x.d.titulo||'Sin título')+'</b><span>'+esc(g?nombreGrupo(g):'Curso eliminado')+' · '+esc(x.d.fecha?fCorta(x.d.fecha):'sin fecha')+' · '+(x.pr.total?x.pr.listos+' de '+x.pr.total+' equipos evaluados':'equipos por armar')+'</span></button></li>';}).join('')+'</ul>':'<p class="ayuda">No hay disertaciones pendientes.</p>')+
+    return '<li><button type="button" class="item-btn" data-a="d-abrir" data-id="'+esc(x.id)+'"><b>'+esc(x.d.titulo||'Sin título')+'</b><span>'+esc(g?nombreGrupo(g):'Curso eliminado')+' · '+esc(x.d.fecha?fCorta(x.d.fecha):'sin fecha')+' · '+(x.pr.total?x.pr.listos+' de '+pl(x.pr.total,'equipo evaluado','equipos evaluados'):'equipos por armar')+'</span></button></li>';}).join('')+'</ul>':'<p class="ayuda">No hay disertaciones pendientes.</p>')+
     '<div class="acciones"><button type="button" class="btn" data-a="d-nueva">+ Nueva disertación</button></div></div>';
 }
 function vHoyBit(){
@@ -196,7 +196,7 @@ function vStats(g){
 }
 function vPdfPend(){
   var p=ui.pdfPend;if(!p)return '';var m=grupoCoincide(p);
-  return '<div class="panel"><h3>Nómina leída del PDF</h3><p><b>'+esc(tit(p.asignatura))+'</b>'+(p.grupo?' · '+esc(tit(p.grupo)):'')+' · '+esc(p.nivel)+'° medio · '+p.estudiantes.length+' estudiantes'+(p.profesor?' · Profesor: '+esc(p.profesor):'')+'</p>'+
+  return '<div class="panel"><h3>Nómina leída del PDF</h3><p><b>'+esc(tit(p.asignatura))+'</b>'+(p.grupo?' · '+esc(tit(p.grupo)):'')+' · '+esc(p.nivel)+'° medio · '+pl(p.estudiantes.length,'estudiante','estudiantes')+(p.profesor?' · Profesor: '+esc(p.profesor):'')+'</p>'+
     '<div class="acciones">'+(m?'<button type="button" class="btn primary" data-a="pdf-actualizar">Actualizar la nómina de '+esc(nombreGrupo(m))+'</button>':'')+
     '<button type="button" class="btn'+(m?'':' primary')+'" data-a="pdf-nuevo">'+(m?'Crear otro curso con esta nómina':'Crear el curso')+'</button><button type="button" class="btn quiet" data-a="pdf-cancelar">Cancelar</button></div>'+
     (m?'<p class="ayuda">Actualizar conserva la asistencia y las notas: agrega a quienes falten y corrige el curso de quienes ya están.</p>':'')+'</div>';

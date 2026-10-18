@@ -68,11 +68,21 @@ function parseNota(v){v=String(v==null?'':v).trim().replace(',','.');if(/^\d{2}$
 /* Escala chilena 1,0–7,0: el 4,0 se alcanza con exigencia × puntaje máximo; redondeo a un decimal. */
 function nota(p,max,e){e=e||0.6;if(!(max>0))return null;var corte=e*max,n;if(p<corte)n=1+3*p/corte;else n=4+3*(p-corte)/(max-corte);n=Math.round(n*10+1e-9)/10;return Math.min(7,Math.max(1,n));}
 function sugerirTiempo(seg,min,nNiv){var d=Math.abs(seg/60-min);var li=d<=1?0:d<=3?1:d<=5?2:3;return Math.min(li,Math.max(0,nNiv-1));}
+/* Nombre y descriptores del criterio Tiempo para m minutos, con los mismos tramos de sugerirTiempo (±1, ±3 y ±5 minutos). */
+function textosTiempo(m){function u(n){return n===1?' minuto':' minutos';}function r(a,b){return a<=0?'menos de '+b:'entre '+a+' y '+b;}function c(t){return t.charAt(0).toUpperCase()+t.slice(1);}
+  return {nombre:'Tiempo ('+m+u(m)+')',desc:[c(r(m-1,m+1)+u(m+1)+'.'),c((m-1>0?r(m-3,m-1)+u(m-1)+', o ':'')+'entre '+(m+1)+' y '+(m+3)+(m-1>0?'.':u(m+3)+'.')),
+    c((m-3>0?r(m-5,m-3)+u(m-3)+', o ':'')+'entre '+(m+3)+' y '+(m+5)+(m-3>0?'.':u(m+5)+'.')),c((m-5>0?'menos de '+(m-5)+' o ':'')+'más de '+(m+5)+u(m+5)+'.')]};}
+/* Si cambian los minutos previstos, el criterio «Tiempo (N minutos)» se pone al día. Sus descriptores solo cambian si son los
+   automáticos (los que la agenda escribió); un texto escrito a mano no se toca. Devuelve los criterios que cambiaron. */
+function ajustarTiempo(r){var m=Math.round(+r.minutos),ch=[];if(!(m>0))return ch;
+  r.criterios.forEach(function(k,j){var x=/^Tiempo \((\d+) minutos?\)$/.exec(k.nombre||'');if(!x||+x[1]===m)return;var a=textosTiempo(+x[1]),b=textosTiempo(m);
+    k.nombre=b.nombre;if(k.auto==='tiempo'&&r.niveles.length===4&&a.desc.every(function(t,i){return k.descriptores[i]===t;}))k.descriptores=b.desc.slice();ch.push(j);});return ch;}
 
 /* =================== Rúbricas de base =================== */
 var NIVELES4=[{nombre:'Sobresaliente',puntos:4},{nombre:'Logrado',puntos:3},{nombre:'Medianamente logrado',puntos:2},{nombre:'Por lograr',puntos:1}];
 var OA_SALUD='Analizar, sobre la base de la investigación, factores biológicos, ambientales y sociales que influyen en la salud humana.';
 var HAB_ARG='Construir, usar y comunicar argumentos científicos.';
+var AYUDA_C1='Propio de esta unidad. Para otra, reescribe su nombre y sus cuatro descriptores, no solo el título.';
 function crit(id,nombre,peso,alcance,desc,extra){var k={id:id,nombre:nombre,peso:peso,alcance:alcance,descriptores:desc,auto:null,ayuda:''};return Object.assign(k,extra||{});}
 function rubricaOriginal(){
   return {nombre:'Exposición oral (tu rúbrica original)',plantilla:'original',objetivo:OA_SALUD,habilidad:HAB_ARG,exigencia:0.6,minutos:15,creado:ahora(),niveles:clonar(NIVELES4),criterios:[
@@ -88,7 +98,7 @@ function rubricaOriginal(){
 }
 function rubricaPropuesta(){
   return {nombre:'Disertación científica (propuesta mejorada)',plantilla:'propuesta',objetivo:OA_SALUD,habilidad:HAB_ARG,exigencia:0.6,minutos:15,creado:ahora(),niveles:clonar(NIVELES4),criterios:[
-    crit('p1','Análisis de factores biológicos, ambientales y sociales',2,'equipo',['Explica los tres tipos de factores y al menos una relación entre ellos, con un ejemplo concreto del tema.','Explica los tres tipos de factores, pero no los relaciona entre sí.','Explica solo dos tipos de factores.','Explica uno o ningún tipo de factor.'],{ayuda:'Criterio propio de este OA: cámbialo al usar la rúbrica en otra unidad.'}),
+    crit('p1','Análisis de factores biológicos, ambientales y sociales',2,'equipo',['Explica los tres tipos de factores y al menos una relación entre ellos, con un ejemplo concreto del tema.','Explica los tres tipos de factores, pero no los relaciona entre sí.','Explica solo dos tipos de factores.','Explica uno o ningún tipo de factor.'],{ayuda:AYUDA_C1}),
     crit('p2','Argumentación científica (conclusión, evidencia y razonamiento)',2,'equipo',['Plantea una conclusión clara y la respalda con dos o más evidencias (datos, estudios, gráficos), explicando cómo cada una la apoya.','Plantea una conclusión con evidencias, pero explica cómo la apoya solo una de ellas.','Plantea una conclusión con evidencias, pero no explica cómo la apoyan, o las evidencias no se relacionan con ella.','No plantea una conclusión o no presenta evidencias.']),
     crit('p3','Fuentes de información',1,'equipo',['Cita en las diapositivas tres o más fuentes confiables (artículos científicos, MINSAL, OMS u otra institución) con autor y año.','Cita dos fuentes confiables con autor y año, o tres o más con datos incompletos.','Cita una sola fuente confiable, o solo fuentes sin autor verificable (blogs, sitios anónimos).','No cita fuentes.']),
     crit('p4','Estructura',1,'equipo',['Tiene introducción con propósito o pregunta, desarrollo en orden lógico y cierre que retoma las ideas principales.','Tiene las tres partes, pero una está incompleta o hay una diapositiva fuera de orden.','Falta una de las tres partes (introducción, desarrollo o cierre).','Faltan dos o más partes, o la información se presenta sin orden.']),
@@ -154,7 +164,7 @@ function prepGrupo(g){
 }
 function prepRubrica(r){
   if(!Array.isArray(r.niveles)||!r.niveles.length)r.niveles=clonar(NIVELES4);
-  r.criterios=(Array.isArray(r.criterios)?r.criterios:[]).map(function(k){k.id=k.id||uid();k.peso=+k.peso||1;k.alcance=k.alcance==='individual'?'individual':'equipo';k.descriptores=Array.isArray(k.descriptores)?k.descriptores:[];k.ayuda=k.ayuda||'';k.auto=k.auto||null;return k;});
+  r.criterios=(Array.isArray(r.criterios)?r.criterios:[]).map(function(k){k.id=k.id||uid();k.peso=+k.peso||1;k.alcance=k.alcance==='individual'?'individual':'equipo';k.descriptores=Array.isArray(k.descriptores)?k.descriptores:[];k.ayuda=k.ayuda==='Criterio propio de este OA: cámbialo al usar la rúbrica en otra unidad.'?AYUDA_C1:(k.ayuda||'');k.auto=k.auto||null;return k;});
   r.exigencia=+r.exigencia||0.6;
 }
 function prepDis(d){
