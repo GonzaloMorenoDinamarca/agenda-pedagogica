@@ -44,7 +44,7 @@ function vHoyBit(){
   var eqs=listaCol('equipos').map(function(t){var regs=registrosDe(t.id);var ult=regs[0];return {t:t,ult:ult,dias:ult?diasDesde(ult.fecha):null};})
     .filter(function(x){return x.t.estado==='atencion'||x.t.estado==='riesgo'||x.dias==null||x.dias>14;});
   return '<div class="panel"><h3>Bitácora de equipos</h3>'+(eqs.length?'<ul class="lista-simple">'+eqs.map(function(x){var e=estadoInfo(x.t.estado);
-    return '<li><button type="button" class="item-btn" data-a="b-abrir" data-id="'+esc(x.t.id)+'"><b>'+esc(x.t.nombre)+'</b><span>'+(e?esc(e.t):'Sin estado')+' · '+(x.ult?'último registro hace '+x.dias+(x.dias===1?' día':' días'):'sin registros')+'</span></button></li>';}).join('')+'</ul>':'<p class="ayuda">Todos los equipos están al día y con registros recientes.</p>')+'</div>';
+    return '<li><button type="button" class="item-btn" data-a="b-abrir" data-id="'+esc(x.t.id)+'"><b>'+esc(x.t.nombre)+'</b><span>'+(e?esc(e.t):'Sin estado')+' · '+(x.ult?'último registro '+(x.dias===0?'hoy':x.dias===1?'ayer':'hace '+x.dias+' días'):'sin registros')+'</span></button></li>';}).join('')+'</ul>':'<p class="ayuda">Todos los equipos están al día y con registros recientes.</p>')+'</div>';
 }
 function vHoy(){
   var hoy=hoyISO(),dow=parseISO(hoy).getDay();
@@ -168,9 +168,10 @@ function grafAsistencia(g,fechas){
   function y(v){return mt+ih-(v/100)*ih;}
   var s='<svg class="grafico" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Porcentaje de presentes en las últimas clases">';
   [0,25,50,75,100].forEach(function(v){s+='<line x1="'+ml+'" x2="'+(W-mr)+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="currentColor" stroke-opacity="'+(v===75?1:0.25)+'" stroke-width="'+(v===75?1.5:1)+'"'+(v===75?' stroke-dasharray="6 4"':'')+'/><text x="'+(ml-6)+'" y="'+(y(v)+4)+'" text-anchor="end" font-size="12" fill="currentColor">'+v+' %</text>';});
-  ult.forEach(function(d,i){var c=conteoDia(g,d);var pct=Math.round(c.p/tot*100);var w=bw*0.6,x=ml+i*bw+(bw-w)/2;
-    s+='<rect x="'+x.toFixed(1)+'" y="'+y(pct).toFixed(1)+'" width="'+w.toFixed(1)+'" height="'+(mt+ih-y(pct)).toFixed(1)+'" fill="currentColor"/>'+
-      '<text x="'+(x+w/2).toFixed(1)+'" y="'+(y(pct)-5).toFixed(1)+'" text-anchor="middle" font-size="12" font-weight="700" fill="currentColor">'+pct+'</text>'+
+  /* La cifra va dentro de la barra, en blanco, para que la línea punteada del 75 % nunca la tache; si la barra es muy baja, va encima. */
+  ult.forEach(function(d,i){var c=conteoDia(g,d);var pct=Math.round(c.p/tot*100);var w=bw*0.6,x=ml+i*bw+(bw-w)/2,alto=mt+ih-y(pct),dentro=alto>=22;
+    s+='<rect x="'+x.toFixed(1)+'" y="'+y(pct).toFixed(1)+'" width="'+w.toFixed(1)+'" height="'+alto.toFixed(1)+'" fill="currentColor"/>'+
+      '<text x="'+(x+w/2).toFixed(1)+'" y="'+(dentro?y(pct)+16:y(pct)-5).toFixed(1)+'" text-anchor="middle" font-size="12" font-weight="700" fill="'+(dentro?'#fff':'currentColor')+'">'+pct+'</text>'+
       '<text x="'+(x+w/2).toFixed(1)+'" y="'+(H-12)+'" text-anchor="middle" font-size="12" fill="currentColor">'+ddmm(d)+'</text>';});
   return s+'</svg>';
 }

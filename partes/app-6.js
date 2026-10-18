@@ -1,6 +1,7 @@
   'c-dest':function(){ui.cDest=!ui.cDest;ui.cPag=0;render();},
-  /* Pasar página de una vez (tinta electrónica: un solo refresco, sin arrastre) */
-  'hoja':function(el){var paso=Math.max(200,window.innerHeight-150);window.scrollTo(0,Math.max(0,window.pageYOffset+(+el.dataset.v)*paso));},
+  /* Pasar página de una vez (tinta electrónica: un solo refresco, sin arrastre). El salto mide solo la zona que se ve:
+     descuenta la barra de abajo y, al evaluar, el marcador fijo de arriba, y repite unas dos líneas para no perder ninguna. */
+  'hoja':function(el){var m=document.querySelector('.marcador'),b=document.querySelector('.hojas');var arriba=m?m.offsetHeight:0,abajo=b?b.getBoundingClientRect().top:window.innerHeight;var paso=Math.max(200,abajo-arriba-84);window.scrollTo(0,Math.max(0,window.pageYOffset+(+el.dataset.v)*paso));},
   'c-pag':function(el){ui.cPag=Math.max(0,ui.cPag+(+el.dataset.v));render();window.scrollTo(0,0);},
   'c-nuevo':function(){ui.cNuevo={g:ui.cGrupo||(grupoActual()||{}).id,d:hoyISO()};render();},
   'c-nuevo-cancelar':function(){ui.cNuevo=null;render();},
