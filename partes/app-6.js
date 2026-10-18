@@ -11,8 +11,8 @@
   'imp-clases':function(){var l=logsFiltrados();if(!l.length){flash('No hay registros con estos filtros.');render();return;}
     imprimir('Registro de clases',pl(l.length,'registro','registros'),'<table><thead><tr><th>Fecha</th><th>Curso</th><th>Contenido de la clase</th></tr></thead><tbody>'+l.map(function(x){return '<tr><td>'+esc(fLarga(x.d))+(x.l.destacado?'<br>★ destacado':'')+'</td><td>'+esc(nombreGrupo(x.g))+'</td><td>'+(x.l.objetivo?'<b>Objetivo:</b> '+esc(x.l.objetivo)+'<br>':'')+(x.l.temas?'<b>Temas:</b> '+esc(x.l.temas)+'<br>':'')+(x.l.obs?'<b>Obs.:</b> '+esc(x.l.obs)+'<br>':'')+(x.l.tarea?'<b>Pendiente:</b> '+esc(x.l.tarea):'')+'</td></tr>';}).join('')+'</tbody></table>');},
   /* Disertaciones */
-  'd-nueva':function(){var g=grupoActual();var rid=S.rubricas['expo-original']?'expo-original':Object.keys(S.rubricas)[0];ui.dForm={titulo:'',grupoId:g?g.id:'',rubricaId:rid||'',fecha:hoyISO()};ui.formError=null;ui.dVista='nueva';irA('disertaciones');foco('dn-tit');},
-  'd-ver':function(el){if(el.dataset.id){if(el.dataset.id!==ui.dId){ui.dEq=0;crono.acumulado=0;crono.eqId=null;}ui.dId=el.dataset.id;}if(crono.inicio&&el.dataset.v!=='evaluar')detenerCrono(true);ui.dVista=el.dataset.v;ui.formError=null;render();window.scrollTo(0,0);},
+  'd-nueva':function(el){var g=grupoActual();var pre=el&&el.dataset?el.dataset.r:null;var rid=pre&&S.rubricas[pre]?pre:S.rubricas['expo-original']?'expo-original':Object.keys(S.rubricas)[0];ui.rVer=null;ui.dForm={titulo:'',grupoId:g?g.id:'',rubricaId:rid||'',fecha:hoyISO()};ui.formError=null;ui.dVista='nueva';irA('disertaciones');foco('dn-tit');},
+  'd-ver':function(el){ui.rVer=null;if(el.dataset.id){if(el.dataset.id!==ui.dId){ui.dEq=0;crono.acumulado=0;crono.eqId=null;}ui.dId=el.dataset.id;}if(crono.inicio&&el.dataset.v!=='evaluar')detenerCrono(true);ui.dVista=el.dataset.v;ui.formError=null;render();window.scrollTo(0,0);},
   'd-borrar':function(){var d=disActual();if(!d)return;var id=ui.dId;conDeshacer('Se eliminó la disertación «'+(d.titulo||'sin título')+'».',function(){delete S.disertaciones[id];});ui.dId=null;ui.dVista='lista';render();window.scrollTo(0,0);},
   'd-eq-nuevo':function(){var d=disActual();var eq={id:uid(),nombre:'Equipo '+(d.equipos.length+1),tema:'',integrantes:[]};d.equipos.push(eq);ui.dEqActivo=eq.id;guardar();render();},
   'd-eq-activar':function(el){ui.dEqActivo=el.dataset.id;render();},
@@ -51,6 +51,8 @@
   'd-imp-hojas':function(){var d=disActual(),r=S.rubricas[d.rubricaId],g=grupoPorId(d.grupoId);imprimir('Retroalimentación · '+(d.titulo||'Disertación'),nombreGrupo(g),hojasRetro(d,r,g));},
   /* Rúbricas */
   'r-tpl':function(el){var v=el.dataset.v;ui.rDraft=v==='propuesta'?rubricaPropuesta():v==='general'?rubricaGeneral():v==='original'?rubricaOriginal():rubricaVacia();if(v!=='blanco'){ui.rDraft.criterios.forEach(function(k){k.id=uid();});}ui.rId=null;ui.dVista='rubrica';ui.formError=null;render();window.scrollTo(0,0);foco('r-nombre');},
+  'r-ver':function(el){ui.rVer=el.dataset.id;ui.dVista='rubricas';render();window.scrollTo(0,0);},
+  'r-ver-cerrar':function(){ui.rVer=null;render();window.scrollTo(0,0);},
   'r-editar':function(el){var r=S.rubricas[el.dataset.id];if(!r)return;ui.rDraft=clonar(r);ui.rId=el.dataset.id;ui.dVista='rubrica';ui.formError=null;render();window.scrollTo(0,0);},
   'r-dup':function(el){var r=S.rubricas[el.dataset.id];if(!r)return;var c=clonar(r);c.nombre=(c.nombre||'Rúbrica')+' (copia)';c.creado=ahora();c.criterios.forEach(function(k){k.id=uid();});S.rubricas[uid()]=c;guardar();flash('Rúbrica duplicada.');render();},
   'r-borrar':function(el){var id=el.dataset.id,r=S.rubricas[id];if(!r)return;var u=usosRubrica(id);conDeshacer('Se eliminó la rúbrica «'+r.nombre+'».'+(u?' Sus disertaciones quedan sin rúbrica hasta que elijas otra.':''),function(){delete S.rubricas[id];});render();},
