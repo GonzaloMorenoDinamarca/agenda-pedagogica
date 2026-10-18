@@ -44,15 +44,22 @@ function claveEst(e){return normNombre(e.ap+' '+e.am+' '+e.n);}
 /* =================== PDF de nómina (formato del sistema del liceo) =================== */
 function cargarScript(src){return new Promise(function(res,rej){var s=document.createElement('script');s.src=src;s.onload=res;s.onerror=function(){rej(new Error('No se pudo cargar el lector de PDF.'));};document.head.appendChild(s);});}
 function asegurarPdfjs(){if(window.pdfjsLib&&window.pdfjsWorker)return Promise.resolve();return cargarScript(PDFJS+'pdf.worker.min.js').then(function(){return cargarScript(PDFJS+'pdf.min.js');});}
+/* Al terminar de leer la nómina se sueltan el documento y el lector de PDF, para que no sigan ocupando memoria
+   mientras la agenda queda abierta. Si se importa otro PDF, el lector se vuelve a cargar (queda guardado para usarse sin conexión). */
+function soltarPdfjs(){['pdfjsLib','pdfjsWorker','pdfjs-dist/build/pdf','pdfjs-dist/build/pdf.worker'].forEach(function(k){try{delete window[k];}catch(e){}});
+  Array.prototype.forEach.call(document.querySelectorAll('script[src^="'+PDFJS+'"]'),function(s){s.remove();});}
+/* Los errores del lector vienen en inglés («Invalid PDF structure.»): se avisan en español. */
+function errorPdf(e){var n=(e&&e.name)||'';if(n==='PasswordException')return new Error('Ese PDF tiene contraseña y la agenda no puede leerlo.');if(/Exception$/.test(n))return new Error('Ese archivo no es un PDF válido o está dañado.');return e;}
 function leerPdf(file){
-  return asegurarPdfjs().then(function(){var lib=window.pdfjsLib;lib.GlobalWorkerOptions.workerSrc=PDFJS+'pdf.worker.min.js';return file.arrayBuffer().then(function(buf){return lib.getDocument({data:buf,isEvalSupported:false}).promise;});})
+  var tarea=null;function soltar(){try{if(tarea)tarea.destroy();}catch(e){}tarea=null;soltarPdfjs();}
+  return asegurarPdfjs().then(function(){var lib=window.pdfjsLib;lib.GlobalWorkerOptions.workerSrc=PDFJS+'pdf.worker.min.js';return file.arrayBuffer().then(function(buf){tarea=lib.getDocument({data:buf,isEvalSupported:false});return tarea.promise;});})
   .then(function(pdf){
     var txt='',cad=Promise.resolve();
     for(var i=1;i<=pdf.numPages;i++)(function(i){cad=cad.then(function(){return pdf.getPage(i).then(function(pg){return pg.getTextContent();}).then(function(tc){
       var m=new Map();tc.items.forEach(function(it){if(!it.str||!it.str.trim())return;var y=Math.round(it.transform[5]),x=it.transform[4];if(!m.has(y))m.set(y,[]);m.get(y).push({x:x,text:it.str});});
       Array.from(m.keys()).sort(function(a,b){return b-a;}).forEach(function(y){var its=m.get(y).sort(function(a,b){return a.x-b.x;});var line='';its.forEach(function(it,idx){if(idx>0){var gap=it.x-(its[idx-1].x+its[idx-1].text.length*3.5);line+=gap>15?'  ':(gap>3?' ':'');}line+=it.text;});txt+=line.trim()+'\n';});txt+='\n';});});})(i);
     return cad.then(function(){return parsePDFText(txt);});
-  });
+  }).then(function(r){soltar();return r;},function(e){soltar();throw errorPdf(e);});
 }
 function parsePDFText(text){
   var lines=text.split('\n').map(function(l){return l.trim();}).filter(Boolean);
