@@ -152,6 +152,8 @@ td small{display:block;color:var(--ink-soft);font-size:var(--fs-xs)}
 .alumnos{list-style:none;margin:0;padding:0}
 .sep-curso{font-family:var(--font-display);font-weight:700;font-size:var(--fs-lg);padding:16px 0 4px;border-bottom:2px solid var(--ink)}
 label.link,label.btn{cursor:pointer}
+/* Un enlace dentro de una frase igual tiene alto suficiente para tocarlo. */
+label.link{display:inline-flex;align-items:center}
 .alumno{display:grid;grid-template-columns:2.2rem minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line-soft)}
 .n-lista{font-variant-numeric:tabular-nums;color:var(--ink-soft);font-size:var(--fs-sm);text-align:right}
 .al-nombre{background:none;border:0;padding:6px 2px;text-align:left;font:inherit;color:var(--ink);cursor:pointer;min-height:48px;min-width:0;overflow-wrap:anywhere}
@@ -184,13 +186,14 @@ label.link,label.btn{cursor:pointer}
 /* ---------- Notas ---------- */
 .tabla-notas td,.tabla-notas th{padding:6px 8px}
 .tabla-notas .col-nombre{position:sticky;left:0;background:var(--paper);z-index:1;min-width:190px;border-right:2px solid var(--ink)}
-.tabla-notas th.ev{text-align:center;white-space:normal;min-width:84px;max-width:140px;text-transform:none;letter-spacing:0;font-size:var(--fs-xs)}
+.tabla-notas th.ev{text-align:center;white-space:normal;min-width:96px;max-width:140px;text-transform:none;letter-spacing:0;font-size:var(--fs-xs)}
 .tabla-notas th.ev small{display:block;font-weight:400;color:var(--ink-soft)}
 .tabla-notas td.nc{text-align:center;padding:4px}
 .nota-in{width:64px!important;min-height:44px!important;padding:6px!important;text-align:center;font-variant-numeric:tabular-nums;font-weight:700}
 .nota-in.baja{color:var(--roja);text-decoration:underline}
-.ev-acc{display:flex;justify-content:center;gap:2px;margin-top:4px}
-.ev-acc button{min-height:32px;min-width:32px;border:1px solid var(--ink);background:var(--paper);border-radius:3px;cursor:pointer;font:700 var(--fs-xs) var(--font-body)}
+/* Editar y eliminar la evaluación: botones de 40 px y separados, para no tocar uno por otro con el dedo. */
+.ev-acc{display:flex;justify-content:center;gap:8px;margin-top:6px}
+.ev-acc button{min-height:40px;min-width:40px;border:1px solid var(--ink);background:var(--paper);border-radius:3px;cursor:pointer;font:700 var(--fs-xs) var(--font-body)}
 td.prom{text-align:center;font-weight:700;font-family:var(--font-display);font-size:var(--fs-lg)}
 tr.sep td{background:var(--fill);font-weight:700;font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.06em}
 
@@ -262,9 +265,14 @@ details.desc ul{margin:4px 0 8px;padding-left:1.2em;font-size:var(--fs-sm)}
 @media (max-width:759px){.bit.con-detalle .lista{display:none}.bit:not(.con-detalle) .detalle{display:none}}
 .lista{display:flex;flex-direction:column;gap:10px}
 .lista-cab{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px}
+/* Nombres, proyectos o enlaces muy largos se cortan dentro de su recuadro en vez de salirse. */
+.equipo,.det-cab>div,.registro{overflow-wrap:anywhere}
 .equipo{display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;width:100%;padding:12px 14px;border:2px solid var(--ink);border-radius:4px;background:var(--paper);color:var(--ink);cursor:pointer;font:inherit}
 .equipo[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
 .eq-nombre{font-family:var(--font-display);font-weight:700;font-size:var(--fs-lg);line-height:1.15}
+/* Con la Boox vertical la lista de equipos es angosta: el nombre va un poco más chico para que palabras largas quepan enteras. */
+@media (min-width:760px) and (max-width:959px){.eq-nombre{font-size:var(--fs-md)}}
+.equipo{hyphens:auto}
 .eq-proy{font-size:var(--fs-sm);line-height:1.35}
 .eq-meta{font-size:var(--fs-xs);font-weight:700}
 .detalle{display:flex;flex-direction:column;gap:22px;min-width:0}
