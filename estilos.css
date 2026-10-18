@@ -242,6 +242,8 @@ dl.campos dd{margin:0 0 6px;white-space:pre-wrap;overflow-wrap:anywhere}
 @media (max-width:699px){.niveles{grid-template-columns:minmax(0,1fr)}}
 .nivel{text-align:left;border:2px solid var(--ink);border-radius:4px;background:var(--paper);color:var(--ink);padding:10px 12px;min-height:60px;cursor:pointer;font:inherit;display:flex;flex-direction:column;gap:6px;min-width:0}
 .nivel[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+/* En «Ver» las tarjetas son solo para mirar. */
+.nivel-ver{cursor:default}
 /* Nombre del nivel y puntaje: el puntaje va a la derecha de la última línea y, si no cabe, baja a la siguiente (nunca se sale de la tarjeta). */
 .n-cab{display:block;font-weight:700;font-size:var(--fs-sm);line-height:1.2}
 .n-cab::after{content:"";display:block;clear:both}
