@@ -195,6 +195,16 @@ label.link{display:inline-flex;align-items:center}
 .ev-acc{display:flex;justify-content:center;gap:8px;margin-top:6px}
 .ev-acc button{min-height:40px;min-width:40px;border:1px solid var(--ink);background:var(--paper);border-radius:3px;cursor:pointer;font:700 var(--fs-xs) var(--font-body)}
 td.prom{text-align:center;font-weight:700;font-family:var(--font-display);font-size:var(--fs-lg)}
+/* Encabezado de cada evaluación con poco margen lateral: así un semestre con 4 evaluaciones cabe entero en la Boox vertical. */
+.tabla-notas th.ev{padding-left:4px;padding-right:4px}
+/* P1, P2 y Pf: columnas angostas, separadas de las notas por una línea gruesa; Pf con fondo gris para encontrarlo de un vistazo. */
+.tabla-notas .pc{width:66px;min-width:66px;text-align:center;padding-left:4px;padding-right:4px}
+.tabla-notas th.pc{font-size:var(--fs-sm);text-transform:none;letter-spacing:0}
+.tabla-notas th.pc small{display:block;font-weight:400;font-size:var(--fs-xs);color:var(--ink-soft)}
+.tabla-notas .p-ini{border-left:2px solid var(--ink)}
+.tabla-notas .pf{background:var(--fill)}
+/* En la ficha del estudiante, cada promedio cierra su bloque con una línea. */
+tr.fila-p td{border-top:2px solid var(--ink)}
 tr.sep td{background:var(--fill);font-weight:700;font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.06em}
 
 /* ---------- Clases ---------- */
