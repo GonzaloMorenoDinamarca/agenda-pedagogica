@@ -105,8 +105,8 @@ var ENVIOS={
     agregarEstudiantes(g,parsearLista(d.lista,''));S.grupos.push(g);guardar();ui.cursoForm=null;ui.formError=null;ui.grupoId=g.id;ui.tab='asistencia';ui.aVista=g.estudiantes.length?'lista':'curso';flash('Curso creado'+(g.estudiantes.length?' con '+pl(g.estudiantes.length,'estudiante','estudiantes'):'')+'.');render();window.scrollTo(0,0);},
   'eval':function(){var d=ui.evalForm,nom=d.nombre.trim();if(!nom){ui.formError='Escribe el nombre de la evaluación.';render();foco('ev-nombre');return;}
     var g=grupoPorId(ui.nSel.slice(2));if(buscarColumna(cal(g),nom)){ui.formError='Ya existe una evaluación con ese nombre en este curso.';render();foco('ev-nombre');return;}
-    cal(g).columns.push({id:uid(),name:nom,date:d.fecha||''});guardar();ui.evalForm=null;ui.formError=null;flash('Evaluación «'+nom+'» agregada.');render();},
-  'renombrar':function(){var d=ui.renombrar,nom=d.nombre.trim();if(!nom){ui.formError='Escribe un nombre.';render();return;}var g=grupoPorId(d.gid);var col=cal(g).columns.filter(function(c){return c.id===d.cid;})[0];if(col){col.name=nom;col.date=d.fecha||'';guardar();}ui.renombrar=null;ui.formError=null;flash('Evaluación actualizada.');render();},
+    var sem=+d.sem===1?1:2;cal(g).columns.push({id:uid(),name:nom,date:d.fecha||'',sem:sem});if(ui.nSem!=='a')ui.nSem=String(sem);guardar();ui.evalForm=null;ui.formError=null;flash('Evaluación «'+nom+'» agregada al '+sem+'° semestre.');render();},
+  'renombrar':function(){var d=ui.renombrar,nom=d.nombre.trim();if(!nom){ui.formError='Escribe un nombre.';render();return;}var g=grupoPorId(d.gid);var col=cal(g).columns.filter(function(c){return c.id===d.cid;})[0];if(col){col.name=nom;col.date=d.fecha||'';col.sem=+d.sem===1?1:2;if(ui.nSem!=='a')ui.nSem=String(col.sem);guardar();}ui.renombrar=null;ui.formError=null;flash('Evaluación actualizada.');render();},
   'c-nuevo':function(){var d=ui.cNuevo;if(!d.g||!d.d)return;ui.cEdit=d.g+'|'+d.d;ui.cNuevo=null;render();foco('lg-obj');},
   'dis':function(){var f=ui.dForm;if(!f.titulo.trim()){ui.formError='Escribe el título o tema general.';render();foco('dn-tit');return;}if(!grupoPorId(f.grupoId)||!S.rubricas[f.rubricaId]){ui.formError='Elige el curso y la rúbrica.';render();return;}
     var id=uid();S.disertaciones[id]={titulo:f.titulo.trim(),grupoId:f.grupoId,rubricaId:f.rubricaId,fecha:f.fecha||'',creado:ahora(),equipos:[],evals:{}};guardar();
@@ -165,9 +165,9 @@ document.addEventListener('input',function(e){
     case 'pegarCurso':ui.pegarCurso=v;return;
     case 'nota':var gn=grupoPorId(el.dataset.g);if(!gn)return;var c=cal(gn),s=el.dataset.sid,cid=el.dataset.c;if(!c.data[s])c.data[s]={};
       if(v.trim()===''){delete c.data[s][cid];}else{var nv=parseNota(v);if(nv==null)return;c.data[s][cid]=nv;el.classList.toggle('baja',nv<4);}
-      guardar();var pr=promVista(gn,s),cel=document.getElementById('prom-'+s);if(cel){cel.textContent=pr!=null?num(pr,1):'—';cel.classList.toggle('baja',pr!=null&&pr<4);}return;
-    case 'ev':if(ui.evalForm)ui.evalForm[p[1]]=v;return;
-    case 'ren':if(ui.renombrar)ui.renombrar[p[1]]=v;return;
+      guardar();pintarProms(gn,s);return;
+    case 'ev':case 'ren':var fo=p[0]==='ev'?ui.evalForm:ui.renombrar;if(!fo)return;fo[p[1]]=v;
+      if(p[1]==='fecha'&&v){fo.sem=String(semDeFecha(v));var se=document.getElementById(p[0]+'-sem');if(se)se.value=fo.sem;}return;
     case 'cbuscar':ui.cBuscar=v;ui.cPag=0;clearTimeout(tBuscar);tBuscar=setTimeout(render,450);return;
     case 'cnu':if(ui.cNuevo)ui.cNuevo[p[1]]=v;return;
     case 'dn':if(ui.dForm)ui.dForm[p[1]]=v;return;
