@@ -90,8 +90,8 @@ function vClases(){
 function maxNivel(r){var m=0;(r.niveles||[]).forEach(function(n){var p=+n.puntos;if(isFinite(p)&&p>m)m=p;});return m;}
 function critEq(r){return r.criterios.filter(function(k){return k.alcance!=='individual';});}
 function critInd(r){return r.criterios.filter(function(k){return k.alcance==='individual';});}
-/* Cuánto vale un criterio, en palabras: «× 2» no se entendía. */
-function pesoTxt(p){p=+p||1;return p===2?'vale doble':p===3?'vale triple':p>1?'vale '+p+' veces':'';}
+/* Cuánto vale un criterio, como en una prueba: su puntaje máximo («vale 8 pts»). «× 2» y «vale doble» no se entendían. */
+function valeTxt(r,k){var m=maxNivel(r)*(+k.peso||1);return 'vale '+num(m)+(m===1?' pt':' pts');}
 function ptsCrit(r,k,li){var nv=r.niveles[li];return nv?(+nv.puntos||0)*(+k.peso||1):0;}
 function maxDe(r,ks){var m=maxNivel(r);return ks.reduce(function(s,k){return s+m*(+k.peso||1);},0);}
 function resEquipo(r,ev){var p=0,h=0,ks=critEq(r);ks.forEach(function(k){var li=ev&&ev.grupo?ev.grupo[k.id]:undefined;if(li!=null&&r.niveles[li]){p+=ptsCrit(r,k,li);h++;}});return {p:p,h:h,t:ks.length,max:maxDe(r,ks)};}
@@ -190,6 +190,6 @@ function vDisEvaluar(d){
   h+='<div class="marcador" id="d-marcador">'+vDisMarcador(d,r,eq,ev)+'</div>';
   var ke=critEq(r);
   if(ke.length)h+='<h3 class="titulo-sec">Criterios del equipo</h3><ol class="criterios">'+ke.map(function(k){var sel=ev&&ev.grupo?ev.grupo[k.id]:undefined;var n=r.criterios.indexOf(k)+1;
-    return '<li class="criterio"><h4><span class="c-num">C'+n+'</span>'+esc(k.nombre||'Criterio sin nombre')+(k.peso>1?'<span class="peso">'+pesoTxt(k.peso)+'</span>':'')+'</h4>'+(k.ayuda?'<p class="ayuda">'+esc(k.ayuda)+'</p>':'')+
+    return '<li class="criterio"><h4><span class="c-num">C'+n+'</span>'+esc(k.nombre||'Criterio sin nombre')+'<span class="peso">'+valeTxt(r,k)+'</span>'+'</h4>'+(k.ayuda?'<p class="ayuda">'+esc(k.ayuda)+'</p>':'')+
       '<div class="niveles" style="--n:'+r.niveles.length+'">'+r.niveles.map(function(lv,li){var sug=ev&&ev.sugerido&&ev.sugerido.c===k.id&&ev.sugerido.li===li;
         return '<button type="button" class="nivel" data-a="d-niv" data-c="'+esc(k.id)+'" data-l="'+li+'" aria-pressed="'+(sel===li)+'"><span class="n-cab"><b>'+esc(lv.nombre)+'</b><span>'+num(ptsCrit(r,k,li))+' pts</span></span>'+(k.descriptores[li]?'<span class="n-desc">'+esc(k.descriptores[li])+'</span>':'')+(sug?'<span class="n-sug">Según el cronómetro</span>':'')+'</button>';}).join('')+'</div></li>';}).join('')+'</ol>';
