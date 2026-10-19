@@ -3,7 +3,7 @@
     h+='<div class="seccion"><h3 class="titulo-sec">Criterios individuales</h3><p class="ayuda">Evalúa a cada integrante en el mismo criterio para comparar con justicia. Si alguien no se presentó, márcalo ausente: su nota queda pendiente.</p>';
     h+='<div class="asist-chips">'+ints.map(function(e){var a=!!(ev&&ev.ausentes&&ev.ausentes[e.id]);return '<button type="button" class="btn chico" data-a="d-ausente" data-id="'+esc(e.id)+'" aria-pressed="'+a+'">'+esc(nombreCorto(e))+': '+(a?'Ausente':'Presente')+'</button>';}).join('')+'</div>';
     ki.forEach(function(k){var n=r.criterios.indexOf(k)+1;
-      h+='<div class="criterio"><h4><span class="c-num">C'+n+'</span>'+esc(k.nombre||'Criterio sin nombre')+(k.peso>1?'<span class="peso">× '+k.peso+'</span>':'')+'</h4>'+
+      h+='<div class="criterio"><h4><span class="c-num">C'+n+'</span>'+esc(k.nombre||'Criterio sin nombre')+(k.peso>1?'<span class="peso">'+pesoTxt(k.peso)+'</span>':'')+'</h4>'+
         '<details class="desc"><summary>Ver descriptores</summary><ul>'+r.niveles.map(function(lv,li){return '<li><b>'+esc(lv.nombre)+' ('+num(ptsCrit(r,k,li))+' pts):</b> '+esc(k.descriptores[li]||'')+'</li>';}).join('')+'</ul></details>';
       pres.forEach(function(e){var sel=((ev&&ev.ind&&ev.ind[e.id])||{})[k.id];
         h+='<div class="ind-fila"><span class="nom">'+esc(nombreCorto(e))+'</span><div class="ind-niv" style="--n:'+r.niveles.length+'">'+r.niveles.map(function(lv,li){return '<button type="button" class="nivel" data-a="d-ind" data-c="'+esc(k.id)+'" data-id="'+esc(e.id)+'" data-l="'+li+'" aria-pressed="'+(sel===li)+'" aria-label="'+esc(nombreCorto(e)+': '+lv.nombre)+'"><span class="n-cab"><b>'+esc(lv.nombre)+'</b><span>'+num(ptsCrit(r,k,li))+'</span></span></button>';}).join('')+'</div></div>';});
@@ -34,7 +34,7 @@ function vDisResumen(d){
     F.map(function(x){return '<tr><td>'+esc(apellidos(x.e))+', '+esc(x.e.n)+'<small>'+esc(x.e.c)+'</small></td><td><button type="button" class="link" data-a="d-ir-eq" data-id="'+esc(x.eq.id)+'">'+esc(x.eq.nombre||'Equipo')+'</button></td>'+
       ks.map(function(k){var li=k.alcance==='individual'?((x.ev&&x.ev.ind&&x.ev.ind[x.e.id])||{})[k.id]:(x.ev&&x.ev.grupo?x.ev.grupo[k.id]:undefined);return '<td class="num">'+(x.res.aus&&k.alcance==='individual'?'—':(li!=null&&r.niveles[li]?num(ptsCrit(r,k,li)):'·'))+'</td>';}).join('')+
       '<td class="num">'+(x.res.aus?'—':num(x.res.total)+' / '+num(x.res.max))+'</td><td class="num'+(x.res.nota!=null&&x.res.nota<4?' baja':'')+'"><b>'+(x.res.aus?'Ausente':x.res.nota!=null?num(x.res.nota,1):'Faltan '+x.res.faltan)+'</b></td>'+(r.minutos?'<td class="num">'+(x.ev&&x.ev.duracionSeg?mmss(x.ev.duracionSeg):'—')+'</td>':'')+'</tr>';}).join('')+'</tbody></table></div>';
-  h+='<p class="leyenda">'+ks.map(function(k,i){return '<span>C'+(i+1)+': '+esc(k.nombre)+(k.alcance==='individual'?' (individual)':'')+(k.peso>1?' × '+k.peso:'')+'</span>';}).join('')+'<span>Puntos ya multiplicados por su peso. Notas bajo 4,0 subrayadas.</span></p>';
+  h+='<p class="leyenda">'+ks.map(function(k,i){return '<span>C'+(i+1)+': '+esc(k.nombre)+(k.alcance==='individual'?' (individual)':'')+(k.peso>1?' ('+pesoTxt(k.peso)+')':'')+'</span>';}).join('')+'<span>Los puntos de los criterios que valen doble ya están multiplicados. Notas bajo 4,0 subrayadas.</span></p>';
   return h+'</section>';
 }
 function nombreColumna(d,g){var np=d.notasPasadas;if(np){var c=cal(g).columns.filter(function(x){return x.id===np.columnaId;})[0];if(c)return c.name;}return 'Disertación: '+d.titulo;}
@@ -56,7 +56,7 @@ function vRubricas(){
 function vRubricaVer(id){
   var r=S.rubricas[id];if(!r){ui.rVer=null;return vRubricas();}
   function fila(k){var n=r.criterios.indexOf(k)+1;
-    return '<li class="criterio"><h4><span class="c-num">C'+n+'</span>'+esc(k.nombre||'Criterio sin nombre')+(k.peso>1?'<span class="peso">× '+k.peso+'</span>':'')+'</h4>'+(k.ayuda?'<p class="ayuda">'+esc(k.ayuda)+'</p>':'')+
+    return '<li class="criterio"><h4><span class="c-num">C'+n+'</span>'+esc(k.nombre||'Criterio sin nombre')+(k.peso>1?'<span class="peso">'+pesoTxt(k.peso)+'</span>':'')+'</h4>'+(k.ayuda?'<p class="ayuda">'+esc(k.ayuda)+'</p>':'')+
       '<div class="niveles" style="--n:'+r.niveles.length+'">'+r.niveles.map(function(lv,li){return '<div class="nivel nivel-ver"><span class="n-cab"><b>'+esc(lv.nombre)+'</b><span>'+num(ptsCrit(r,k,li))+' pts</span></span>'+(k.descriptores[li]?'<span class="n-desc">'+esc(k.descriptores[li])+'</span>':'')+'</div>';}).join('')+'</div></li>';}
   var ke=critEq(r),ki=critInd(r);
   var h='<section class="seccion"><button type="button" class="btn quiet volver" data-a="r-ver-cerrar">← Rúbricas</button>'+
@@ -92,7 +92,7 @@ function vEditorRub(){
     return '<div class="crit-ed"><div class="crit-ed-cab"><div class="campo"><label for="r-c'+j+'">C'+(j+1)+' · Nombre</label><input type="text" id="r-c'+j+'" data-f="rub.crit.'+j+'.nombre" value="'+esc(k.nombre)+'"></div>'+
       (j>0?'<button type="button" class="btn" data-a="crit-up" data-i="'+j+'">Subir</button>':'')+(d.criterios.length>1?'<button type="button" class="btn quiet" data-a="crit-del" data-i="'+j+'">Quitar</button>':'')+'</div>'+
       '<div class="fila-2"><div class="campo"><label for="r-c'+j+'-al">Se evalúa</label><select id="r-c'+j+'-al" data-f="rub.crit.'+j+'.alcance"><option value="equipo"'+(k.alcance!=='individual'?' selected':'')+'>Al equipo (misma nota para todos)</option><option value="individual"'+(k.alcance==='individual'?' selected':'')+'>A cada integrante</option></select></div>'+
-      '<div class="campo"><label for="r-c'+j+'-pe">Peso</label><select id="r-c'+j+'-pe" data-f="rub.crit.'+j+'.peso">'+[1,2,3].map(function(p){return '<option value="'+p+'"'+((+k.peso||1)===p?' selected':'')+'>× '+p+'</option>';}).join('')+'</select></div></div>'+
+      '<div class="campo"><label for="r-c'+j+'-pe">Cuánto vale</label><select id="r-c'+j+'-pe" data-f="rub.crit.'+j+'.peso">'+[1,2,3].map(function(p){return '<option value="'+p+'"'+((+k.peso||1)===p?' selected':'')+'>'+(p===1?'Normal':p===2?'Doble':'Triple')+'</option>';}).join('')+'</select></div></div>'+
       '<div class="campo"><label for="r-c'+j+'-ay">Indicación para quien evalúa (opcional)</label><input type="text" id="r-c'+j+'-ay" data-f="rub.crit.'+j+'.ayuda" value="'+esc(k.ayuda||'')+'"></div>'+
       (d.minutos?'<label class="campo-check" for="r-c'+j+'-au"><input type="checkbox" id="r-c'+j+'-au" data-f="rub.crit.'+j+'.auto"'+(k.auto==='tiempo'?' checked':'')+'> Sugerir el nivel con el cronómetro (±1, ±3 y ±5 minutos del tiempo previsto)</label>':'')+
       d.niveles.map(function(n,i){return '<div class="campo"><label for="r-c'+j+'d'+i+'">'+esc(n.nombre||('Nivel '+(i+1)))+'</label><textarea id="r-c'+j+'d'+i+'" rows="2" data-f="rub.crit.'+j+'.desc.'+i+'">'+esc(k.descriptores[i]||'')+'</textarea></div>';}).join('')+'</div>';
