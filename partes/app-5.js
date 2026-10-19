@@ -83,21 +83,21 @@ function parsePDFText(text){
 
 /* =================== Notas: lógica =================== */
 function exportarNotas(){
-  var D=datosNotas();_colsNotas=D.cols;
-  var filas=[['N°','Apellidos','Nombres','Curso'].concat(D.todos?['Grupo']:[],D.cols.map(function(c){return c.name;}),['Promedio'])];
-  D.filas.forEach(function(x,i){var c=cal(x.g);var pr=promVista(x.g,x.e.id);
-    filas.push([i+1,apellidos(x.e),x.e.n,x.e.c].concat(D.todos?[tit(x.g.grupo||x.g.asignatura)]:[],D.cols.map(function(col){var cid=col.por[x.g.id];var v=cid?(c.data[x.e.id]||{})[cid]:null;return v!=null?num(v,1):'';}),[pr!=null?num(pr,1):'']));});
+  var D=datosNotas(),cols=D.cols.filter(function(c){return c.sem===1;}).concat(D.cols.filter(function(c){return c.sem===2;}));
+  var filas=[['N°','Apellidos','Nombres','Curso'].concat(D.todos?['Grupo']:[],cols.map(function(c){return c.name;}),['P1 (1° semestre)','P2 (2° semestre)','Pf (promedio final)'])];
+  D.filas.forEach(function(x,i){var c=cal(x.g);var p=promsEst(x.g,x.e.id);
+    filas.push([i+1,apellidos(x.e),x.e.n,x.e.c].concat(D.todos?[tit(x.g.grupo||x.g.asignatura)]:[],cols.map(function(col){var cid=col.por[x.g.id];var v=cid?(c.data[x.e.id]||{})[cid]:null;return v!=null?num(v,1):'';}),[p.p1,p.p2,p.pf].map(function(v){return v!=null?num(v,1):'';})));});
   var nombre=D.todos?'notas_'+D.nivel+'medio_todos':'notas_'+slug(D.gs[0].asignatura)+'_'+slug(D.gs[0].grupo);
   descargar(nombre+(ui.nCurso?'_'+slug(ui.nCurso):'')+'_'+hoyISO()+'.csv',aCSV(filas),'text/csv;charset=utf-8');render();
 }
 function importarNotasCSV(file,g){
   file.text().then(function(text){
     var filas=parseCSV(text);if(filas.length<2){flash('El archivo no tiene filas de notas.');render();return;}
-    var cab=filas[0];var fin=cab.length;if(/promedio/i.test(cab[fin-1]||''))fin--;var ini=/grupo/i.test(cab[4]||'')?5:4;
+    var cab=filas[0];var ini=/grupo/i.test(cab[4]||'')?5:4;var fin=cab.length;while(fin>ini&&/^\s*(p1|p2|pf)(\s*\(.*\))?\s*$|^\s*promedio/i.test(cab[fin-1]||''))fin--;
     var nombres=cab.slice(ini,fin).filter(function(x){return x;});if(!nombres.length){flash('No encontré columnas de evaluaciones. Usa el mismo formato del CSV que descarga la agenda.');render();return;}
     var c=cal(g);
     conDeshacer('Notas importadas desde CSV.',function(){
-      nombres.forEach(function(n){if(!buscarColumna(c,n))c.columns.push({id:uid(),name:n,date:''});});
+      var sem=ui.nSem==='1'||ui.nSem==='2'?+ui.nSem:semDeFecha(hoyISO());nombres.forEach(function(n){if(!buscarColumna(c,n))c.columns.push({id:uid(),name:n,date:'',sem:sem});});
       var ok=0,nf=0;
       filas.slice(1).forEach(function(f){var ap=normNombre(f[1]),nn=normNombre(f[2]);var e=g.estudiantes.filter(function(s){return normNombre(apellidos(s))===ap&&normNombre(s.n)===nn;})[0];if(!e){nf++;return;}ok++;
         if(!c.data[e.id])c.data[e.id]={};nombres.forEach(function(n,j){var col=buscarColumna(c,n);var v=parseNota(f[ini+j]);if(col&&v!=null)c.data[e.id][col.id]=v;});});
@@ -134,7 +134,7 @@ function pasarANotas(d){
   var c=cal(g),col=d.notasPasadas?c.columns.filter(function(x){return x.id===d.notasPasadas.columnaId;})[0]:null;
   var nom='Disertación: '+(d.titulo||'sin título');
   if(!col)col=buscarColumna(c,nom);
-  if(!col){col={id:uid(),name:nom,date:d.fecha||''};c.columns.push(col);}
+  if(!col){col={id:uid(),name:nom,date:d.fecha||'',sem:semDeFecha(d.fecha||hoyISO())};c.columns.push(col);}
   var n=0,p=0;
   filasDis(d,r,g).forEach(function(x){if(!c.data[x.e.id])c.data[x.e.id]={};if(x.res.nota!=null){c.data[x.e.id][col.id]=x.res.nota;n++;}else{delete c.data[x.e.id][col.id];p++;}});
   d.notasPasadas={columnaId:col.id,fecha:ahora(),n:n,p:p};guardar();
@@ -248,14 +248,14 @@ var A={
   'pdf-cancelar':function(){ui.pdfPend=null;render();},
   'ir-fecha':function(el){ui.fecha=el.dataset.v;ui.aVista='lista';render();window.scrollTo(0,0);},
   /* Notas */
-  'ev-nueva':function(){ui.evalForm={nombre:'',fecha:hoyISO()};ui.renombrar=null;ui.formError=null;render();foco('ev-nombre');},
+  'ev-nueva':function(){ui.evalForm={nombre:'',fecha:hoyISO(),sem:ui.nSem==='1'||ui.nSem==='2'?ui.nSem:String(semDeFecha(hoyISO()))};ui.renombrar=null;ui.formError=null;render();foco('ev-nombre');},
   'ev-cancelar':function(){ui.evalForm=null;ui.formError=null;render();},
-  'ev-editar':function(el){var g=grupoPorId(ui.nSel.slice(2));var col=cal(g).columns.filter(function(c){return c.id===el.dataset.c;})[0];if(!col)return;ui.renombrar={gid:g.id,cid:col.id,nombre:col.name,fecha:col.date||''};ui.evalForm=null;ui.formError=null;render();arriba();foco('ren-nombre');},
+  'ev-editar':function(el){var g=grupoPorId(ui.nSel.slice(2));var col=cal(g).columns.filter(function(c){return c.id===el.dataset.c;})[0];if(!col)return;ui.renombrar={gid:g.id,cid:col.id,nombre:col.name,fecha:col.date||'',sem:String(semCol(col))};ui.evalForm=null;ui.formError=null;render();arriba();foco('ren-nombre');},
   'ren-cancelar':function(){ui.renombrar=null;ui.formError=null;render();},
   'ev-borrar':function(el){var g=grupoPorId(ui.nSel.slice(2)),c=cal(g),cid=el.dataset.c;var col=c.columns.filter(function(x){return x.id===cid;})[0];if(!col)return;
     conDeshacer('Se eliminó la evaluación «'+col.name+'».',function(){c.columns=c.columns.filter(function(x){return x.id!==cid;});Object.keys(c.data).forEach(function(s){delete c.data[s][cid];});});render();},
   'exp-notas':function(){exportarNotas();},
-  'imp-notas':function(){var D=datosNotas();_colsNotas=D.cols;if(!D.cols.length){flash('No hay evaluaciones para imprimir.');render();return;}
-    imprimir('Notas',D.todos?D.nivel+'° medio · todos los grupos':nombreGrupo(D.gs[0]),(ui.nCurso?'<p>Curso: '+esc(ui.nCurso)+'</p>':'')+'<table><thead><tr><th>N°</th><th>Estudiante</th><th>Curso</th>'+D.cols.map(function(c){return '<th>'+esc(c.name)+'</th>';}).join('')+'<th>Promedio</th></tr></thead><tbody>'+
-      D.filas.map(function(x,i){var c=cal(x.g);var pr=promVista(x.g,x.e.id);return '<tr><td>'+(i+1)+'</td><td>'+esc(apellidos(x.e))+', '+esc(x.e.n)+'</td><td>'+esc(x.e.c)+'</td>'+D.cols.map(function(col){var cid=col.por[x.g.id];var v=cid?(c.data[x.e.id]||{})[cid]:null;return '<td>'+(v!=null?num(v,1):'—')+'</td>';}).join('')+'<td><b>'+(pr!=null?num(pr,1):'—')+'</b></td></tr>';}).join('')+'</tbody></table>');},
+  'imp-notas':function(){var D=datosNotas(),cols=colsVista(D.cols);if(!D.cols.length){flash('No hay evaluaciones para imprimir.');render();return;}
+    imprimir('Notas · '+(ui.nSem==='a'?'año completo':ui.nSem+'° semestre'),D.todos?D.nivel+'° medio · todos los grupos':nombreGrupo(D.gs[0]),(ui.nCurso?'<p>Curso: '+esc(ui.nCurso)+'</p>':'')+'<table><thead><tr><th>N°</th><th>Estudiante</th><th>Curso</th>'+cols.map(function(c){return '<th>'+esc(c.name)+'</th>';}).join('')+'<th>P1</th><th>P2</th><th>Pf</th></tr></thead><tbody>'+
+      D.filas.map(function(x,i){var c=cal(x.g);var p=promsEst(x.g,x.e.id);return '<tr><td>'+(i+1)+'</td><td>'+esc(apellidos(x.e))+', '+esc(x.e.n)+'</td><td>'+esc(x.e.c)+'</td>'+cols.map(function(col){var cid=col.por[x.g.id];var v=cid?(c.data[x.e.id]||{})[cid]:null;return '<td>'+(v!=null?num(v,1):'—')+'</td>';}).join('')+[p.p1,p.p2,p.pf].map(function(v,j){var t=v!=null?num(v,1):'—';return '<td>'+(j===2?'<b>'+t+'</b>':t)+'</td>';}).join('')+'</tr>';}).join('')+'</tbody></table><p>P1 y P2: promedio de las notas de cada semestre. Pf: promedio de P1 y P2.</p>');},
   /* Clases */
