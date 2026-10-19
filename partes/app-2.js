@@ -47,18 +47,13 @@ function vHoyBit(){
     return '<li><button type="button" class="item-btn" data-a="b-abrir" data-id="'+esc(x.t.id)+'"><b>'+esc(x.t.nombre)+'</b><span>'+(e?esc(e.t):'Sin estado')+' · '+(x.ult?'último registro '+(x.dias===0?'hoy':x.dias===1?'ayer':'hace '+x.dias+' días'):'sin registros')+'</span></button></li>';}).join('')+'</ul>':'<p class="ayuda">Todos los equipos están al día y con registros recientes.</p>')+'</div>';
 }
 function vHoy(){
-  var hoy=hoyISO(),dow=parseISO(hoy).getDay();
+  var hoy=hoyISO();
   var h='<section class="seccion">';
   var gs=gruposOrden();
   if(!gs.length){h+=vPdfPend()+(ui.cursoForm?vFormCursoNuevo():'')+vBienvenida()+'<div class="dos-col">'+vHoyDis()+vHoyBit()+'</div>';return h+'</section>';}
-  var conDias=gs.some(function(g){return Array.isArray(g.dias)&&g.dias.length;});
-  var deHoy=conDias?gs.filter(function(g){return !Array.isArray(g.dias)||!g.dias.length||g.dias.indexOf(dow)>=0;}):gs;
-  var c1='<div class="panel"><h3>'+(conDias?'Clases de hoy':'Tus cursos')+'</h3>';
-  if(!deHoy.length)c1+='<p class="ayuda">Según tu horario, hoy no tienes clases.</p>';
-  c1+='<div class="cursos-hoy">'+deHoy.map(function(g){var c=conteoDia(g,hoy);var tom=c.p+c.a+c.l>0;var log=g.classLogs[hoy];
+  var c1='<div class="panel"><h3>Tus cursos</h3>';
+  c1+='<div class="cursos-hoy">'+gs.map(function(g){var c=conteoDia(g,hoy);var tom=c.p+c.a+c.l>0;var log=g.classLogs[hoy];
     return '<button type="button" class="curso-hoy'+(tom?' hecho':'')+'" data-a="ir-lista" data-id="'+esc(g.id)+'"><b>'+esc(nombreGrupo(g))+'</b><span>'+(tom?'Lista: '+pl(c.p,'presente','presentes')+' · '+pl(c.a,'ausente','ausentes')+' · '+pl(c.l,'atraso','atrasos')+(c.sin?' · '+c.sin+' sin marcar':''):'Lista pendiente · '+pl(c.total,'estudiante','estudiantes'))+'</span><span>'+(log?'Registro de clase hecho':'Sin registro de clase')+'</span></button>';}).join('')+'</div>';
-  if(conDias&&deHoy.length<gs.length)c1+='<div class="campo"><label for="hoy-otro">Pasar lista en otro curso</label><select id="hoy-otro" data-sel="ir-lista"><option value="">Elige un curso</option>'+opcionesGrupos('')+'</select></div>';
-  else if(!conDias)c1+='<p class="ayuda">Marca los días de clase de cada curso en Asistencia › Curso y nómina, y aquí verás solo los de hoy.</p>';
   c1+='</div>';
   var pend=[];gs.forEach(function(g){var ds=Object.keys(g.classLogs).filter(function(d){return d<=hoy;}).sort();for(var i=ds.length-1;i>=0;i--){var l=g.classLogs[ds[i]];if(l&&l.tarea){pend.push({g:g,d:ds[i],t:l.tarea});break;}}});
   pend.sort(function(a,b){return cmp(b.d,a.d);});
@@ -219,10 +214,8 @@ function vCurso(g){
     '<div class="fila-2"><div class="campo"><label for="ne-ap">Apellido paterno</label><input type="text" id="ne-ap" data-f="ne.ap" value="'+esc(ne.ap)+'" autocomplete="off"></div><div class="campo"><label for="ne-am">Apellido materno</label><input type="text" id="ne-am" data-f="ne.am" value="'+esc(ne.am)+'" autocomplete="off"></div></div>'+
     '<div class="campo"><label for="ne-n">Nombres</label><input type="text" id="ne-n" data-f="ne.n" value="'+esc(ne.n)+'" autocomplete="off"></div>'+campoCurso('ne',g,ne)+
     '<button type="submit" class="btn primary">Agregar a la lista</button><p class="ayuda">Queda ordenado con su curso y por apellido paterno.</p></form>';
-  h+='<div class="panel"><h3>Pegar varios estudiantes</h3><p class="ayuda">Uno por línea: apellido paterno, apellido materno, nombres, curso. También sirven las columnas copiadas desde Excel.</p>'+
-    '<textarea id="pegar" rows="5" data-f="pegar">'+esc(ui.pegar)+'</textarea><div class="campo"><label for="pg-curso">Curso para quienes no lo indiquen</label><select id="pg-curso" data-f="pegarCurso"><option value="">Sin curso</option>'+cursosDe(g).map(function(c){return '<option value="'+esc(c)+'"'+(ui.pegarCurso===c?' selected':'')+'>'+esc(c)+'</option>';}).join('')+'</select></div>'+
-    '<div class="acciones"><button type="button" class="btn" data-a="pegar-agregar">Agregar estudiantes</button></div></div>';
-  h+='<div class="panel"><h3>Días de clase</h3><p class="ayuda">La pantalla Hoy muestra este curso los días marcados.</p><div class="dias">'+DIAS.map(function(d){return '<button type="button" class="btn" data-a="dia" data-v="'+d[0]+'" aria-pressed="'+((g.dias||[]).indexOf(d[0])>=0)+'" aria-label="'+d[2]+'">'+d[1]+'</button>';}).join('')+'</div></div>';
+  h+='<div class="panel"><h3>Cursos</h3><div class="acciones"><button type="button" class="btn" data-a="curso-nuevo">+ Nuevo curso</button><label class="btn" for="pdf-curso">Importar nómina en PDF</label><input type="file" id="pdf-curso" class="oculto" data-file="pdf" accept=".pdf,application/pdf"></div>'+
+    '<div class="acciones"><button type="button" class="btn quiet" data-a="curso-borrar">Eliminar este curso y todos sus datos</button></div></div>';
   h+='</div><div class="seccion">';
   h+='<form class="panel" data-form="curso-datos"><h3>Datos del curso</h3>'+vError()+
     '<div class="campo"><label for="cd-asig">Asignatura</label><input type="text" id="cd-asig" data-f="cd.asignatura" value="'+esc(cd.asignatura)+'"></div>'+
