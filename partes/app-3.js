@@ -4,14 +4,22 @@
 }
 
 /* =================== Vista: Notas =================== */
-var _colsNotas=[];
+/* Semestres: cada evaluación es del 1° o del 2°. Si no lo dice, se deduce de su fecha (hasta junio, 1°) y queda guardado; se cambia al crearla o editarla. */
+function semDeFecha(f){var m=+String(f||'').slice(5,7);return m>=1&&m<=6?1:2;}
+function semCol(c){if(c.sem!==1&&c.sem!==2){c.sem=semDeFecha(c.date||hoyISO());guardar();}return c.sem;}
+/* P1 y P2: promedio de las notas de cada semestre. Pf: promedio de P1 y P2 (con un solo semestre con notas, es ese).
+   Siempre con todas las evaluaciones del curso, se mire el semestre que se mire. */
+function promsEst(g,sid){var c=cal(g),d=c.data[sid]||{},s1=[],s2=[];c.columns.forEach(function(col){var v=d[col.id];if(v==null)return;(semCol(col)===1?s1:s2).push(v);});var p1=promedioDe(s1),p2=promedioDe(s2);return {p1:p1,p2:p2,pf:promedioDe([p1,p2])};}
+function pintarProms(g,sid){var p=promsEst(g,sid);['p1','p2','pf'].forEach(function(k){var el=document.getElementById(k+'-'+sid);if(el){el.textContent=p[k]!=null?num(p[k],1):'—';el.classList.toggle('baja',p[k]!=null&&p[k]<4);}});}
 function columnasNotas(gs,todos){
-  if(!todos){var g=gs[0];return cal(g).columns.map(function(c){var por={};por[g.id]=c.id;return {key:c.id,id:c.id,name:c.name,date:c.date||'',por:por};});}
+  if(!todos){var g=gs[0];return cal(g).columns.map(function(c){var por={};por[g.id]=c.id;return {key:c.id,id:c.id,name:c.name,date:c.date||'',sem:semCol(c),por:por};});}
   var map={},orden=[];
-  gs.forEach(function(g){cal(g).columns.forEach(function(c){var k=normNombre(c.name);if(!map[k]){map[k]={key:'n:'+k,name:c.name,date:c.date||'',por:{}};orden.push(map[k]);}if(!map[k].por[g.id])map[k].por[g.id]=c.id;});});
+  gs.forEach(function(g){cal(g).columns.forEach(function(c){var k=normNombre(c.name);if(!map[k]){map[k]={key:'n:'+k,name:c.name,date:c.date||'',sem:semCol(c),por:{}};orden.push(map[k]);}if(!map[k].por[g.id])map[k].por[g.id]=c.id;});});
   return orden;
 }
-function promVista(g,sid){var c=cal(g);return promedioDe(_colsNotas.map(function(col){var cid=col.por[g.id];if(!cid)return null;var v=(c.data[sid]||{})[cid];return v!=null?v:null;}));}
+/* Qué evaluaciones se ven: las del semestre elegido o todo el año (primero las del 1°). */
+function colsVista(cols){if(ui.nSem==='a')return cols.filter(function(c){return c.sem===1;}).concat(cols.filter(function(c){return c.sem===2;}));var s=+ui.nSem;return cols.filter(function(c){return c.sem===s;});}
+function campoSem(pre,v){return '<div class="campo"><label for="'+pre+'-sem">Semestre</label><select id="'+pre+'-sem" data-f="'+pre+'.sem">'+[['1','1° semestre'],['2','2° semestre']].map(function(o){return '<option value="'+o[0]+'"'+(String(v)===o[0]?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select></div>';}
 function datosNotas(){
   if(!ui.nSel||(ui.nSel.indexOf('g:')===0&&!grupoPorId(ui.nSel.slice(2)))||(ui.nSel.indexOf('n:')===0&&!S.grupos.some(function(g){return g.nivel===ui.nSel.slice(2);})))ui.nSel='g:'+grupoActual().id;
   var todos=ui.nSel.indexOf('n:')===0,nivel=todos?ui.nSel.slice(2):null;
@@ -26,28 +34,35 @@ function datosNotas(){
 }
 function vNotas(){
   if(!S.grupos.length)return vSinCursos();
-  var D=datosNotas();_colsNotas=D.cols;
+  var D=datosNotas();
+  if(ui.nSem!=='1'&&ui.nSem!=='2'&&ui.nSem!=='a')ui.nSem=String(semDeFecha(hoyISO()));
   var h='<section class="seccion"><div class="barra"><div class="campo"><label for="sel-notas">Curso</label><select id="sel-notas" data-sel="notas">'+opcionesGrupos(ui.nSel,true)+'</select></div>'+
     (D.cursos.length>1?'<div class="campo"><label for="sel-ncurso">Filtrar por curso</label><select id="sel-ncurso" data-sel="ncurso"><option value="">Todos los cursos</option>'+D.cursos.map(function(c){return '<option value="'+esc(c)+'"'+(ui.nCurso===c?' selected':'')+'>'+esc(c)+'</option>';}).join('')+'</select></div>':'')+'</div>';
+  h+=segmento('nSem',[['1','1° semestre'],['2','2° semestre'],['a','Año completo']]);
   h+='<div class="acciones">'+(D.todos?'':'<button type="button" class="btn primary" data-a="ev-nueva">+ Evaluación</button>')+'<button type="button" class="btn" data-a="exp-notas">Descargar CSV</button>'+
     (D.todos?'':'<label class="btn" for="notas-csv">Importar CSV</label><input type="file" id="notas-csv" class="oculto" data-file="notas-csv" accept=".csv,text/csv">')+'<button type="button" class="btn" data-a="imp-notas">Imprimir</button></div>';
   if(D.todos)h+='<p class="ayuda">Vista de todos los grupos del nivel: las evaluaciones con el mismo nombre se muestran en una sola columna. «—» indica que ese grupo no tiene esa evaluación.</p>';
-  if(ui.evalForm)h+='<form class="form" data-form="eval"><h3>Nueva evaluación</h3>'+vError()+'<div class="fila-2"><div class="campo"><label for="ev-nombre">Nombre</label><input type="text" id="ev-nombre" data-f="ev.nombre" value="'+esc(ui.evalForm.nombre)+'" placeholder="Ej.: Prueba 1"></div><div class="campo"><label for="ev-fecha">Fecha</label><input type="date" id="ev-fecha" data-f="ev.fecha" value="'+esc(ui.evalForm.fecha)+'"></div></div><div class="acciones"><button type="submit" class="btn primary">Agregar evaluación</button><button type="button" class="btn" data-a="ev-cancelar">Cancelar</button></div></form>';
-  if(ui.renombrar)h+='<form class="form" data-form="renombrar"><h3>Editar evaluación</h3>'+vError()+'<div class="fila-2"><div class="campo"><label for="ren-nombre">Nombre</label><input type="text" id="ren-nombre" data-f="ren.nombre" value="'+esc(ui.renombrar.nombre)+'"></div><div class="campo"><label for="ren-fecha">Fecha</label><input type="date" id="ren-fecha" data-f="ren.fecha" value="'+esc(ui.renombrar.fecha)+'"></div></div><div class="acciones"><button type="submit" class="btn primary">Guardar</button><button type="button" class="btn" data-a="ren-cancelar">Cancelar</button></div></form>';
+  if(ui.evalForm)h+='<form class="form" data-form="eval"><h3>Nueva evaluación</h3>'+vError()+'<div class="fila-3"><div class="campo"><label for="ev-nombre">Nombre</label><input type="text" id="ev-nombre" data-f="ev.nombre" value="'+esc(ui.evalForm.nombre)+'" placeholder="Ej.: Prueba 1"></div><div class="campo"><label for="ev-fecha">Fecha</label><input type="date" id="ev-fecha" data-f="ev.fecha" value="'+esc(ui.evalForm.fecha)+'"></div>'+campoSem('ev',ui.evalForm.sem)+'</div><div class="acciones"><button type="submit" class="btn primary">Agregar evaluación</button><button type="button" class="btn" data-a="ev-cancelar">Cancelar</button></div></form>';
+  if(ui.renombrar)h+='<form class="form" data-form="renombrar"><h3>Editar evaluación</h3>'+vError()+'<div class="fila-3"><div class="campo"><label for="ren-nombre">Nombre</label><input type="text" id="ren-nombre" data-f="ren.nombre" value="'+esc(ui.renombrar.nombre)+'"></div><div class="campo"><label for="ren-fecha">Fecha</label><input type="date" id="ren-fecha" data-f="ren.fecha" value="'+esc(ui.renombrar.fecha)+'"></div>'+campoSem('ren',ui.renombrar.sem)+'</div><div class="acciones"><button type="submit" class="btn primary">Guardar</button><button type="button" class="btn" data-a="ren-cancelar">Cancelar</button></div></form>';
   if(!D.cols.length)return h+'<div class="vacio"><h3>'+(D.todos?'Ningún grupo de este nivel tiene evaluaciones':'Agrega la primera evaluación')+'</h3><p>Cada evaluación es una columna de notas. Las notas de las disertaciones también llegan aquí.</p></div></section>';
   if(!D.filas.length)return h+'<div class="vacio"><h3>Sin estudiantes</h3></div></section>';
-  var th='<tr><th class="col-nombre">Estudiante</th>'+(D.todos?'<th>Grupo</th>':'')+D.cols.map(function(c){return '<th class="ev">'+esc(c.name)+(c.date?'<small>'+esc(fCorta(c.date))+'</small>':'')+(D.todos?'':'<div class="ev-acc"><button type="button" data-a="ev-editar" data-c="'+esc(c.id)+'" aria-label="Editar '+esc(c.name)+'">✎</button><button type="button" data-a="ev-borrar" data-c="'+esc(c.id)+'" aria-label="Eliminar '+esc(c.name)+'">✕</button></div>')+'</th>';}).join('')+'<th class="num">Promedio</th></tr>';
-  var multi=D.cursos.length>1&&!ui.nCurso,last=null,body='',ncol=D.cols.length+2+(D.todos?1:0);
+  var cols=colsVista(D.cols);
+  if(!cols.length)h+='<p class="ayuda">Aún no hay evaluaciones del '+ui.nSem+'° semestre.'+(D.todos?'':' Agrégalas con «+ Evaluación».')+'</p>';
+  function sub(c){var a=[];if(ui.nSem==='a')a.push(c.sem+'° sem.');if(c.date)a.push(fCorta(c.date));return a.length?'<small>'+esc(a.join(' · '))+'</small>':'';}
+  var th='<tr><th class="col-nombre">Estudiante</th>'+(D.todos?'<th>Grupo</th>':'')+cols.map(function(c){return '<th class="ev">'+esc(c.name)+sub(c)+(D.todos?'':'<div class="ev-acc"><button type="button" data-a="ev-editar" data-c="'+esc(c.id)+'" aria-label="Editar '+esc(c.name)+'">✎</button><button type="button" data-a="ev-borrar" data-c="'+esc(c.id)+'" aria-label="Eliminar '+esc(c.name)+'">✕</button></div>')+'</th>';}).join('')+
+    '<th class="pc p-ini" title="Promedio del 1° semestre">P1<small>1° sem.</small></th><th class="pc" title="Promedio del 2° semestre">P2<small>2° sem.</small></th><th class="pc pf" title="Promedio final: promedio de P1 y P2">Pf<small>final</small></th></tr>';
+  function celP(k,v,sid,cls){return '<td class="prom pc'+cls+(v!=null&&v<4?' baja':'')+'" id="'+k+'-'+esc(sid)+'">'+(v!=null?num(v,1):'—')+'</td>';}
+  var multi=D.cursos.length>1&&!ui.nCurso,last=null,body='',ncol=cols.length+4+(D.todos?1:0);
   D.filas.forEach(function(x){
     if(multi&&x.e.c!==last){last=x.e.c;body+='<tr class="sep"><td colspan="'+ncol+'">'+esc(x.e.c||'Sin curso')+'</td></tr>';}
     var c=cal(x.g);
     body+='<tr><td class="col-nombre"><b>'+esc(apellidos(x.e))+'</b>, '+esc(x.e.n)+'<small>'+esc(x.e.c||'')+'</small></td>'+(D.todos?'<td>'+esc(tit(x.g.grupo||x.g.asignatura))+'</td>':'')+
-      D.cols.map(function(col){var cid=col.por[x.g.id];if(!cid)return '<td class="nc" title="Este grupo no tiene esta evaluación">—</td>';var v=(c.data[x.e.id]||{})[cid];
+      cols.map(function(col){var cid=col.por[x.g.id];if(!cid)return '<td class="nc" title="Este grupo no tiene esta evaluación">—</td>';var v=(c.data[x.e.id]||{})[cid];
         return '<td class="nc"><input class="nota-in'+(v!=null&&v<4?' baja':'')+'" id="nt-'+esc(x.e.id)+'-'+esc(cid)+'" type="text" inputmode="decimal" autocomplete="off" data-f="nota" data-g="'+esc(x.g.id)+'" data-sid="'+esc(x.e.id)+'" data-c="'+esc(cid)+'" value="'+(v!=null?num(v,1):'')+'" aria-label="'+esc(col.name)+' de '+esc(nombreCorto(x.e))+'"></td>';}).join('');
-    var pr=promVista(x.g,x.e.id);
-    body+='<td class="prom'+(pr!=null&&pr<4?' baja':'')+'" id="prom-'+esc(x.e.id)+'">'+(pr!=null?num(pr,1):'—')+'</td></tr>';
+    var p=promsEst(x.g,x.e.id);
+    body+=celP('p1',p.p1,x.e.id,' p-ini')+celP('p2',p.p2,x.e.id,'')+celP('pf',p.pf,x.e.id,' pf')+'</tr>';
   });
-  h+='<div class="tabla-wrap"><table class="tabla-notas"><thead>'+th+'</thead><tbody>'+body+'</tbody></table></div><p class="ayuda">Escribe la nota con coma o punto (5,6 o 5.6), o sin separador (56). Se guarda al instante.</p>';
+  h+='<div class="tabla-wrap"><table class="tabla-notas"><thead>'+th+'</thead><tbody>'+body+'</tbody></table></div><p class="ayuda">P1 y P2: promedio de las notas de cada semestre. Pf: promedio de P1 y P2. Escribe la nota con coma o punto (5,6 o 5.6), o sin separador (56); se guarda al instante.</p>';
   return h+'</section>';
 }
 
