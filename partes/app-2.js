@@ -1,7 +1,7 @@
 function fechasAsistencia(g){return Object.keys(g.asistencia).filter(function(d){return g.asistencia[d]&&Object.keys(g.asistencia[d]).length;}).sort();}
 function cal(g){if(!g.calificaciones)g.calificaciones={columns:[],data:{}};return g.calificaciones;}
 function buscarColumna(c,name){var n=normNombre(name);return c.columns.filter(function(x){return x.name===name;})[0]||c.columns.filter(function(x){return normNombre(x.name)===n;})[0]||null;}
-function promNotasEst(g,sid){var c=cal(g);return promedioDe(c.columns.map(function(col){var v=(c.data[sid]||{})[col.id];return v!=null?v:null;}));}
+function promNotasEst(g,sid){return promsEst(g,sid).pf;}
 
 /* =================== Vistas: cabecera =================== */
 function segmento(campo,ops){return '<div class="segmento" role="group">'+ops.map(function(o){return '<button type="button" class="seg" data-a="vista" data-k="'+campo+'" data-v="'+o[0]+'" aria-pressed="'+(ui[campo]===o[0])+'">'+o[1]+'</button>';}).join('')+'</div>';}
@@ -146,9 +146,11 @@ function vFicha(g,e){
   h+='<div class="panel"><h3>Asistencia</h3><div class="acciones"><span>'+esc(fCorta(f))+':</span>'+vPat(e.id,att)+'</div>'+
     (s.r?'<p><b class="'+(enRiesgo(s)?'baja':'')+'">'+s.pct+' %</b> en '+s.r+(s.r===1?' clase registrada':' clases registradas')+' · '+pl(s.p,'presente','presentes')+' · '+pl(s.a,'ausente','ausentes')+' · '+pl(s.l,'atraso','atrasos')+'</p>':'<p class="ayuda">Aún sin clases registradas.</p>')+
     (fs.length?'<ul class="lista-simple">'+fs.map(function(x){return '<li class="item-btn"><span>'+esc(fLarga(x))+' · <b>'+ATT[g.asistencia[x][e.id]]+'</b></span></li>';}).join('')+'</ul>':'')+'</div>';
-  var c=cal(g),pr=promNotasEst(g,e.id);
-  h+='<div class="panel"><h3>Notas</h3>'+(c.columns.length?'<table><tbody>'+c.columns.map(function(col){var v=(c.data[e.id]||{})[col.id];return '<tr><td>'+esc(col.name)+(col.date?'<small>'+esc(fCorta(col.date))+'</small>':'')+'</td><td class="num'+(v!=null&&v<4?' baja':'')+'">'+(v!=null?num(v,1):'—')+'</td></tr>';}).join('')+
-    '<tr><td><b>Promedio</b></td><td class="num'+(pr!=null&&pr<4?' baja':'')+'"><b>'+(pr!=null?num(pr,1):'—')+'</b></td></tr></tbody></table>':'<p class="ayuda">Este curso aún no tiene evaluaciones.</p>')+'</div>';
+  var c=cal(g),ps=promsEst(g,e.id);
+  function filaP(et,v){return '<tr class="fila-p"><td><b>'+et+'</b></td><td class="num'+(v!=null&&v<4?' baja':'')+'"><b>'+(v!=null?num(v,1):'—')+'</b></td></tr>';}
+  function filasSem(sm){var cs=c.columns.filter(function(col){return semCol(col)===sm;});if(!cs.length)return '';
+    return cs.map(function(col){var v=(c.data[e.id]||{})[col.id];return '<tr><td>'+esc(col.name)+(col.date?'<small>'+esc(fCorta(col.date))+'</small>':'')+'</td><td class="num'+(v!=null&&v<4?' baja':'')+'">'+(v!=null?num(v,1):'—')+'</td></tr>';}).join('')+filaP('P'+sm+' · '+sm+'° semestre',ps['p'+sm]);}
+  h+='<div class="panel"><h3>Notas</h3>'+(c.columns.length?'<table><tbody>'+filasSem(1)+filasSem(2)+filaP('Pf · promedio final',ps.pf)+'</tbody></table>':'<p class="ayuda">Este curso aún no tiene evaluaciones.</p>')+'</div>';
   h+='</div><div class="seccion">';
   var hist=Object.keys(g.notas).filter(function(x){return x!==f&&g.notas[x]&&g.notas[x][e.id];}).sort().reverse();
   h+='<div class="panel"><h3>Observaciones de otros días</h3>'+(hist.length?'<ul class="hist">'+hist.map(function(x){return '<li><time datetime="'+esc(x)+'">'+esc(fLarga(x))+'</time><p>'+esc(g.notas[x][e.id])+'</p></li>';}).join('')+'</ul>':'<p class="ayuda">No hay observaciones de otros días.</p>')+'</div>';
