@@ -1,7 +1,5 @@
     '<div class="campo"><label for="cd-prof">Profesor</label><input type="text" id="cd-prof" data-f="cd.profesor" value="'+esc(cd.profesor)+'"></div><button type="submit" class="btn">Guardar datos del curso</button></form>';
   h+='<div class="panel"><h3>Descargar e imprimir</h3><div class="acciones"><button type="button" class="btn" data-a="exp-asis" data-v="dia">Asistencia del día (Excel)</button><button type="button" class="btn" data-a="exp-asis" data-v="todo">Toda la asistencia (Excel)</button><button type="button" class="btn" data-a="exp-nomina">Nómina (CSV)</button><button type="button" class="btn" data-a="imp-lista">Imprimir lista del día</button></div></div>';
-  h+='<div class="panel"><h3>Cursos</h3><div class="acciones"><button type="button" class="btn" data-a="curso-nuevo">+ Nuevo curso</button><label class="btn" for="pdf-curso">Importar nómina en PDF</label><input type="file" id="pdf-curso" class="oculto" data-file="pdf" accept=".pdf,application/pdf"></div>'+
-    '<div class="acciones"><button type="button" class="btn quiet" data-a="curso-borrar">Eliminar este curso y todos sus datos</button></div></div>';
   return h+'</div></div>';
 }
 
@@ -92,6 +90,8 @@ function vClases(){
 function maxNivel(r){var m=0;(r.niveles||[]).forEach(function(n){var p=+n.puntos;if(isFinite(p)&&p>m)m=p;});return m;}
 function critEq(r){return r.criterios.filter(function(k){return k.alcance!=='individual';});}
 function critInd(r){return r.criterios.filter(function(k){return k.alcance==='individual';});}
+/* Cuánto vale un criterio, en palabras: «× 2» no se entendía. */
+function pesoTxt(p){p=+p||1;return p===2?'vale doble':p===3?'vale triple':p>1?'vale '+p+' veces':'';}
 function ptsCrit(r,k,li){var nv=r.niveles[li];return nv?(+nv.puntos||0)*(+k.peso||1):0;}
 function maxDe(r,ks){var m=maxNivel(r);return ks.reduce(function(s,k){return s+m*(+k.peso||1);},0);}
 function resEquipo(r,ev){var p=0,h=0,ks=critEq(r);ks.forEach(function(k){var li=ev&&ev.grupo?ev.grupo[k.id]:undefined;if(li!=null&&r.niveles[li]){p+=ptsCrit(r,k,li);h++;}});return {p:p,h:h,t:ks.length,max:maxDe(r,ks)};}
@@ -190,6 +190,6 @@ function vDisEvaluar(d){
   h+='<div class="marcador" id="d-marcador">'+vDisMarcador(d,r,eq,ev)+'</div>';
   var ke=critEq(r);
   if(ke.length)h+='<h3 class="titulo-sec">Criterios del equipo</h3><ol class="criterios">'+ke.map(function(k){var sel=ev&&ev.grupo?ev.grupo[k.id]:undefined;var n=r.criterios.indexOf(k)+1;
-    return '<li class="criterio"><h4><span class="c-num">C'+n+'</span>'+esc(k.nombre||'Criterio sin nombre')+(k.peso>1?'<span class="peso">× '+k.peso+'</span>':'')+'</h4>'+(k.ayuda?'<p class="ayuda">'+esc(k.ayuda)+'</p>':'')+
+    return '<li class="criterio"><h4><span class="c-num">C'+n+'</span>'+esc(k.nombre||'Criterio sin nombre')+(k.peso>1?'<span class="peso">'+pesoTxt(k.peso)+'</span>':'')+'</h4>'+(k.ayuda?'<p class="ayuda">'+esc(k.ayuda)+'</p>':'')+
       '<div class="niveles" style="--n:'+r.niveles.length+'">'+r.niveles.map(function(lv,li){var sug=ev&&ev.sugerido&&ev.sugerido.c===k.id&&ev.sugerido.li===li;
         return '<button type="button" class="nivel" data-a="d-niv" data-c="'+esc(k.id)+'" data-l="'+li+'" aria-pressed="'+(sel===li)+'"><span class="n-cab"><b>'+esc(lv.nombre)+'</b><span>'+num(ptsCrit(r,k,li))+' pts</span></span>'+(k.descriptores[li]?'<span class="n-desc">'+esc(k.descriptores[li])+'</span>':'')+(sug?'<span class="n-sug">Según el cronómetro</span>':'')+'</button>';}).join('')+'</div></li>';}).join('')+'</ol>';
