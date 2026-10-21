@@ -1,3 +1,10 @@
+/* Retirado de la asignatura (se cambió a otra): sigue en la lista con su número, tachado y en gris, y conserva su asistencia y sus notas.
+   Desde su fecha de retiro no se le pasa lista ni se cuenta en los totales del curso; los días anteriores quedan como estaban. */
+function retEn(e,f){return !!(e&&e.ret&&String(f||'')>=e.ret);}
+function retirado(e){return retEn(e,hoyISO());}
+function statsEst(g,sid){var e=estPorId(g,sid),p=0,a=0,l=0,r=0;Object.keys(g.asistencia).forEach(function(d){if(retEn(e,d))return;var s=(g.asistencia[d]||{})[sid];if(s==='present')p++;else if(s==='absent')a++;else if(s==='late')l++;if(s)r++;});return {p:p,a:a,l:l,r:r,pct:r?Math.round(p/r*100):null};}
+function enRiesgo(s){return s.r>=3&&s.pct<75;}
+function conteoDia(g,f){var att=g.asistencia[f]||{};var p=0,a=0,l=0,t=0;g.estudiantes.forEach(function(e){if(retEn(e,f))return;t++;var s=att[e.id];if(s==='present')p++;else if(s==='absent')a++;else if(s==='late')l++;});return {p:p,a:a,l:l,sin:t-p-a-l,total:t};}
 function fechasAsistencia(g){return Object.keys(g.asistencia).filter(function(d){return g.asistencia[d]&&Object.keys(g.asistencia[d]).length;}).sort();}
 function cal(g){if(!g.calificaciones)g.calificaciones={columns:[],data:{}};return g.calificaciones;}
 function buscarColumna(c,name){var n=normNombre(name);return c.columns.filter(function(x){return x.name===name;})[0]||c.columns.filter(function(x){return normNombre(x.name)===n;})[0]||null;}
@@ -58,7 +65,7 @@ function vHoy(){
   var pend=[];gs.forEach(function(g){var ds=Object.keys(g.classLogs).filter(function(d){return d<=hoy;}).sort();for(var i=ds.length-1;i>=0;i--){var l=g.classLogs[ds[i]];if(l&&l.tarea){pend.push({g:g,d:ds[i],t:l.tarea});break;}}});
   pend.sort(function(a,b){return cmp(b.d,a.d);});
   var c2='<div class="panel"><h3>Pendientes para la próxima clase</h3>'+(pend.length?'<ul class="lista-simple">'+pend.map(function(x){return '<li><button type="button" class="item-btn fuerte" data-a="ir-lista" data-id="'+esc(x.g.id)+'"><b>'+esc(x.t)+'</b><span>'+esc(nombreGrupo(x.g))+' · anotado el '+esc(fCorta(x.d))+'</span></button></li>';}).join('')+'</ul>':'<p class="ayuda">Sin pendientes. Se anotan en el registro de cada clase.</p>')+'</div>';
-  var riesgo=gs.map(function(g){return {g:g,n:g.estudiantes.filter(function(e){return enRiesgo(statsEst(g,e.id));}).length};}).filter(function(x){return x.n>0;});
+  var riesgo=gs.map(function(g){return {g:g,n:g.estudiantes.filter(function(e){return !retirado(e)&&enRiesgo(statsEst(g,e.id));}).length};}).filter(function(x){return x.n>0;});
   var c3='<div class="panel"><h3>Asistencia bajo 75 %</h3>'+(riesgo.length?'<ul class="lista-simple">'+riesgo.map(function(x){return '<li><button type="button" class="item-btn" data-a="ir-stats" data-id="'+esc(x.g.id)+'"><b>'+x.n+(x.n===1?' estudiante':' estudiantes')+'</b><span>'+esc(nombreGrupo(x.g))+'</span></button></li>';}).join('')+'</ul>':'<p class="ayuda">Nadie bajo 75 %. Se cuenta desde la tercera clase registrada.</p>')+'</div>';
   h+='<div class="dos-col"><div class="seccion">'+c1+c2+'</div><div class="seccion">'+c3+vHoyDis()+vHoyBit()+'</div></div>';
   return h+'</section>';
@@ -120,7 +127,10 @@ function vLista(g){
   var last=null,n=0,rows='';
   est.forEach(function(e){
     if(multi&&e.c!==last){last=e.c;rows+='<li class="sep-curso">'+esc(e.c||'Sin curso')+'</li>';}
-    n++;var s=statsEst(g,e.id),bajo=enRiesgo(s);
+    n++;
+    if(retEn(e,ui.fecha)){rows+='<li class="alumno ret"><span class="n-lista">'+n+'</span><button type="button" class="al-nombre" data-a="ficha" data-id="'+esc(e.id)+'"><span class="tachado"><b>'+esc(apellidos(e))+'</b>'+(e.n?', '+esc(e.n):'')+'</span>'+
+      '<small>'+esc(e.c||'Sin curso')+' · retirado desde el '+esc(ddmm(e.ret))+'</small></button><span class="ret-et">Retirado</span></li>';return;}
+    var s=statsEst(g,e.id),bajo=enRiesgo(s);
     rows+='<li class="alumno"><span class="n-lista">'+n+'</span><button type="button" class="al-nombre" data-a="ficha" data-id="'+esc(e.id)+'"><b>'+esc(apellidos(e))+'</b>'+(e.n?', '+esc(e.n):'')+
       '<small>'+esc(e.c||'Sin curso')+(bajo?' · asistencia '+s.pct+' %':'')+'</small></button>'+vPat(e.id,att[e.id]||null)+
       '<button type="button" class="obs-b'+(obs[e.id]?' tiene':'')+'" data-a="ficha-obs" data-id="'+esc(e.id)+'" aria-label="Observación de '+esc(nombreCorto(e))+'">'+(obs[e.id]?'Obs ✓':'Obs')+'</button></li>';
@@ -140,10 +150,10 @@ function vFicha(g,e){
   if(!ui.estDraft||ui.estDraft.sid!==e.id)ui.estDraft={sid:e.id,ap:e.ap,am:e.am,n:e.n,c:e.c,otro:false,cOtro:''};
   var d=ui.estDraft;
   var h='<section class="seccion"><button type="button" class="btn quiet volver" data-a="ficha-cerrar">← Volver a la lista</button>';
-  h+='<div class="ficha-cab"><p class="eyebrow">'+esc(nombreGrupo(g))+' · '+esc(e.c||'Sin curso')+'</p><h2>'+esc(nombreCompleto(e))+'</h2></div><div class="dos-col"><div class="seccion">';
+  h+='<div class="ficha-cab"><p class="eyebrow">'+esc(nombreGrupo(g))+' · '+esc(e.c||'Sin curso')+'</p><h2>'+esc(nombreCompleto(e))+'</h2>'+(e.ret?'<p><span class="chip">Retirado de la asignatura desde el '+esc(fCorta(e.ret))+'</span></p>':'')+'</div><div class="dos-col"><div class="seccion">';
   h+='<div class="panel"><h3>Observación del '+esc(fLarga(f))+'</h3><textarea id="obs-txt" rows="4" data-f="obs" data-id="'+esc(e.id)+'" placeholder="Escribe una observación sobre el estudiante">'+esc(obs)+'</textarea><p class="ayuda">Se guarda mientras escribes. Para anotar en otro día, cambia la fecha en la lista.</p>'+(obs?'<div class="acciones"><button type="button" class="btn quiet" data-a="obs-borrar" data-id="'+esc(e.id)+'">Borrar observación</button></div>':'')+'</div>';
   var fs=fechasAsistencia(g).filter(function(x){return g.asistencia[x][e.id];}).reverse().slice(0,10);
-  h+='<div class="panel"><h3>Asistencia</h3><div class="acciones"><span>'+esc(fCorta(f))+':</span>'+vPat(e.id,att)+'</div>'+
+  h+='<div class="panel"><h3>Asistencia</h3><div class="acciones"><span>'+esc(fCorta(f))+':</span>'+(retEn(e,f)?'<span class="ret-et">Retirado</span>':vPat(e.id,att))+'</div>'+
     (s.r?'<p><b class="'+(enRiesgo(s)?'baja':'')+'">'+s.pct+' %</b> en '+s.r+(s.r===1?' clase registrada':' clases registradas')+' · '+pl(s.p,'presente','presentes')+' · '+pl(s.a,'ausente','ausentes')+' · '+pl(s.l,'atraso','atrasos')+'</p>':'<p class="ayuda">Aún sin clases registradas.</p>')+
     (fs.length?'<ul class="lista-simple">'+fs.map(function(x){return '<li class="item-btn"><span>'+esc(fLarga(x))+' · <b>'+ATT[g.asistencia[x][e.id]]+'</b></span></li>';}).join('')+'</ul>':'')+'</div>';
   var c=cal(g),ps=promsEst(g,e.id);
@@ -152,41 +162,46 @@ function vFicha(g,e){
     return cs.map(function(col){var v=(c.data[e.id]||{})[col.id];return '<tr><td>'+esc(col.name)+(col.date?'<small>'+esc(fCorta(col.date))+'</small>':'')+'</td><td class="num'+(v!=null&&v<4?' baja':'')+'">'+(v!=null?num(v,1):'—')+'</td></tr>';}).join('')+filaP('P'+sm+' · '+sm+'° semestre',ps['p'+sm]);}
   h+='<div class="panel"><h3>Notas</h3>'+(c.columns.length?'<table><tbody>'+filasSem(1)+filasSem(2)+filaP('Pf · promedio final',ps.pf)+'</tbody></table>':'<p class="ayuda">Este curso aún no tiene evaluaciones.</p>')+'</div>';
   h+='</div><div class="seccion">';
+  if(e.ret)h+='<div class="panel"><h3>Retirado de la asignatura</h3><div class="campo"><label for="es-ret">Desde</label><input type="date" id="es-ret" data-sel="est-ret" data-id="'+esc(e.id)+'" value="'+esc(e.ret)+'"></div>'+
+    '<p class="ayuda">Sigue en la lista con su número, tachado y en gris. Desde esa fecha no se le pasa lista ni se cuenta en los totales del curso; su asistencia y sus notas quedan guardadas.</p>'+
+    '<div class="acciones"><button type="button" class="btn" data-a="est-reincorporar" data-id="'+esc(e.id)+'">Reincorporar a la lista</button></div></div>';
   var hist=Object.keys(g.notas).filter(function(x){return x!==f&&g.notas[x]&&g.notas[x][e.id];}).sort().reverse();
   h+='<div class="panel"><h3>Observaciones de otros días</h3>'+(hist.length?'<ul class="hist">'+hist.map(function(x){return '<li><time datetime="'+esc(x)+'">'+esc(fLarga(x))+'</time><p>'+esc(g.notas[x][e.id])+'</p></li>';}).join('')+'</ul>':'<p class="ayuda">No hay observaciones de otros días.</p>')+'</div>';
   h+='<form class="panel" data-form="est"><h3>Datos del estudiante</h3>'+vError()+
     '<div class="fila-2"><div class="campo"><label for="es-ap">Apellido paterno</label><input type="text" id="es-ap" data-f="es.ap" value="'+esc(d.ap)+'"></div><div class="campo"><label for="es-am">Apellido materno</label><input type="text" id="es-am" data-f="es.am" value="'+esc(d.am)+'"></div></div>'+
     '<div class="campo"><label for="es-n">Nombres</label><input type="text" id="es-n" data-f="es.n" value="'+esc(d.n)+'"></div>'+campoCurso('es',g,d)+
-    '<div class="acciones"><button type="submit" class="btn primary">Guardar datos</button><button type="button" class="btn quiet" data-a="est-borrar" data-id="'+esc(e.id)+'">Eliminar estudiante</button></div></form>';
+    '<div class="acciones"><button type="submit" class="btn primary">Guardar datos</button>'+(e.ret?'':'<button type="button" class="btn" data-a="est-retirar" data-id="'+esc(e.id)+'">Marcar como retirado</button>')+'<button type="button" class="btn quiet" data-a="est-borrar" data-id="'+esc(e.id)+'">Eliminar estudiante</button></div>'+
+    (e.ret?'':'<p class="ayuda">«Marcar como retirado» es para quien se cambió de asignatura: sigue en la lista con el nombre tachado y ya no se cuenta al pasar lista. «Eliminar» lo borra con toda su asistencia y sus notas.</p>')+'</form>';
   return h+'</div></div></section>';
 }
 function grafAsistencia(g,fechas){
-  var ult=fechas.slice(-12),W=640,H=230,ml=40,mr=8,mt=18,mb=34,iw=W-ml-mr,ih=H-mt-mb,n=ult.length||1,bw=iw/n,tot=g.estudiantes.length||1;
+  var ult=fechas.slice(-12),W=640,H=230,ml=40,mr=8,mt=18,mb=34,iw=W-ml-mr,ih=H-mt-mb,n=ult.length||1,bw=iw/n;
   function y(v){return mt+ih-(v/100)*ih;}
   var s='<svg class="grafico" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Porcentaje de presentes en las últimas clases">';
   [0,25,50,75,100].forEach(function(v){s+='<line x1="'+ml+'" x2="'+(W-mr)+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="currentColor" stroke-opacity="'+(v===75?1:0.25)+'" stroke-width="'+(v===75?1.5:1)+'"'+(v===75?' stroke-dasharray="6 4"':'')+'/><text x="'+(ml-6)+'" y="'+(y(v)+4)+'" text-anchor="end" font-size="12" fill="currentColor">'+v+' %</text>';});
   /* La cifra va dentro de la barra, en blanco, para que la línea punteada del 75 % nunca la tache; si la barra es muy baja, va encima. */
-  ult.forEach(function(d,i){var c=conteoDia(g,d);var pct=Math.round(c.p/tot*100);var w=bw*0.6,x=ml+i*bw+(bw-w)/2,alto=mt+ih-y(pct),dentro=alto>=22;
+  ult.forEach(function(d,i){var c=conteoDia(g,d);var pct=Math.round(c.p/(c.total||1)*100);var w=bw*0.6,x=ml+i*bw+(bw-w)/2,alto=mt+ih-y(pct),dentro=alto>=22;
     s+='<rect x="'+x.toFixed(1)+'" y="'+y(pct).toFixed(1)+'" width="'+w.toFixed(1)+'" height="'+alto.toFixed(1)+'" fill="currentColor"/>'+
       '<text x="'+(x+w/2).toFixed(1)+'" y="'+(dentro?y(pct)+16:y(pct)-5).toFixed(1)+'" text-anchor="middle" font-size="12" font-weight="700" fill="'+(dentro?'#fff':'currentColor')+'">'+pct+'</text>'+
       '<text x="'+(x+w/2).toFixed(1)+'" y="'+(H-12)+'" text-anchor="middle" font-size="12" fill="currentColor">'+ddmm(d)+'</text>';});
   return s+'</svg>';
 }
 function datosStats(g){
-  var fechas=fechasAsistencia(g);var filas=g.estudiantes.map(function(e){return {e:e,s:statsEst(g,e.id),prom:promNotasEst(g,e.id)};}).filter(function(x){return x.s.r>0;});
+  var fechas=fechasAsistencia(g);var filas=g.estudiantes.map(function(e){return {e:e,s:statsEst(g,e.id),prom:promNotasEst(g,e.id)};}).filter(function(x){return x.s.r>0&&!retirado(x.e);});
   filas.sort(function(a,b){return a.s.pct-b.s.pct||cmpEst(a.e,b.e);});
   var tp=0,tr=0;filas.forEach(function(x){tp+=x.s.p;tr+=x.s.r;});
-  return {fechas:fechas,filas:filas,prom:tr?Math.round(tp/tr*100):null,bajo:filas.filter(function(x){return enRiesgo(x.s);}).length};
+  return {fechas:fechas,filas:filas,prom:tr?Math.round(tp/tr*100):null,bajo:filas.filter(function(x){return enRiesgo(x.s);}).length,ret:g.estudiantes.filter(retirado).length};
 }
 function vStats(g){
   var D=datosStats(g);
   if(!D.fechas.length)return '<div class="vacio"><h3>Sin asistencia registrada</h3><p>Las estadísticas aparecen cuando pasas lista al menos una vez.</p></div>';
   var hasCal=cal(g).columns.length>0;
-  var h='<div class="stats"><div class="stat">Clases<b>'+D.fechas.length+'</b></div><div class="stat">Asistencia promedio<b>'+(D.prom!=null?D.prom+' %':'—')+'</b></div><div class="stat">Bajo 75 %<b>'+D.bajo+'</b></div><div class="stat">Estudiantes<b>'+g.estudiantes.length+'</b></div></div>';
+  var h='<div class="stats"><div class="stat">Clases<b>'+D.fechas.length+'</b></div><div class="stat">Asistencia promedio<b>'+(D.prom!=null?D.prom+' %':'—')+'</b></div><div class="stat">Bajo 75 %<b>'+D.bajo+'</b></div><div class="stat">Estudiantes<b>'+(g.estudiantes.length-D.ret)+'</b></div></div>';
   h+='<div class="panel suave"><h3>Presentes por clase (últimas '+Math.min(12,D.fechas.length)+')</h3>'+grafAsistencia(g,D.fechas)+'<p class="leyenda"><span>Porcentaje del curso marcado como presente. La línea punteada marca 75 %.</span></p></div>';
   h+='<div class="acciones"><button type="button" class="btn" data-a="imp-stats">Imprimir estadísticas</button></div>';
   h+='<div class="tabla-wrap"><table><thead><tr><th>Estudiante</th><th>Curso</th><th class="num">Asistencia</th><th class="num">P</th><th class="num">A</th><th class="num">T</th><th class="num">Clases</th>'+(hasCal?'<th class="num">Prom. notas</th>':'')+'</tr></thead><tbody>'+
     D.filas.map(function(x){return '<tr><td><button type="button" class="link" data-a="ficha" data-id="'+esc(x.e.id)+'">'+esc(apellidos(x.e))+', '+esc(x.e.n)+'</button></td><td>'+esc(x.e.c)+'</td><td class="num'+(enRiesgo(x.s)?' baja':'')+'">'+x.s.pct+' %</td><td class="num">'+x.s.p+'</td><td class="num">'+x.s.a+'</td><td class="num">'+x.s.l+'</td><td class="num">'+x.s.r+'</td>'+(hasCal?'<td class="num'+(x.prom!=null&&x.prom<4?' baja':'')+'">'+(x.prom!=null?num(x.prom,1):'—')+'</td>':'')+'</tr>';}).join('')+'</tbody></table></div>';
+  if(D.ret)h+='<p class="ayuda">No incluye a '+pl(D.ret,'estudiante retirado','estudiantes retirados')+' de la asignatura; su asistencia está en su ficha.</p>';
   h+='<div class="panel suave"><h3>Historial de clases</h3><p class="ayuda">Toca una fecha para abrir la lista de ese día.</p><div class="fechas-grid">'+D.fechas.slice().reverse().map(function(d){var c=conteoDia(g,d);
     return '<button type="button" class="fecha-b'+(c.a?' con-aus':'')+'" data-a="ir-fecha" data-v="'+d+'"><b>'+esc(fCorta(d))+'</b><span>P '+c.p+' · A '+c.a+' · T '+c.l+'</span></button>';}).join('')+'</div></div>';
   return h;
