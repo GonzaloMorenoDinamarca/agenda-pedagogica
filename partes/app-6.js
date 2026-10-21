@@ -20,7 +20,7 @@
   'd-asignar':function(el){var d=disActual();var eq=d.equipos.filter(function(x){return x.id===ui.dEqActivo;})[0];if(!eq)return;if(eq.integrantes.indexOf(el.dataset.id)<0)eq.integrantes.push(el.dataset.id);guardar();render();},
   'd-quitar':function(el){var d=disActual();d.equipos.forEach(function(eq){eq.integrantes=eq.integrantes.filter(function(s){return s!==el.dataset.id;});});guardar();render();},
   'd-auto':function(){var d=disActual(),g=grupoPorId(d.grupoId);if(!g)return;var asig={};d.equipos.forEach(function(eq){eq.integrantes.forEach(function(s){asig[s]=1;});});
-    var sin=ordenarEst(g.estudiantes.filter(function(e){return !asig[e.id];})),t=ui.dTam||3;if(!sin.length)return;
+    var sin=ordenarEst(g.estudiantes.filter(function(e){return !asig[e.id]&&!retirado(e);})),t=ui.dTam||3;if(!sin.length)return;
     conDeshacer('Se armaron equipos automáticamente.',function(){var trozos=[];for(var i=0;i<sin.length;i+=t)trozos.push(sin.slice(i,i+t));
       if(trozos.length>1&&trozos[trozos.length-1].length===1){var solo=trozos.pop();trozos[trozos.length-1]=trozos[trozos.length-1].concat(solo);}
       trozos.forEach(function(tr){var eq={id:uid(),nombre:'Equipo '+(d.equipos.length+1),tema:'',integrantes:tr.map(function(e){return e.id;})};d.equipos.push(eq);ui.dEqActivo=eq.id;});});
@@ -208,6 +208,7 @@ document.addEventListener('change',function(e){
     case 'cnivel':ui.cNivel=v2;ui.cPag=0;render();break;
     case 'cgrupo':ui.cGrupo=v2;ui.cPag=0;render();break;
     case 'dtam':ui.dTam=+v2||3;break;
+    case 'est-ret':var ge=grupoActual(),er=estPorId(ge,el.dataset.id);if(er){if(v2)er.ret=v2;guardar();render();}break;
     case 'd-eq':cambiarEquipo(+v2);break;
     case 'dc-fecha':var d=disActual();if(d){d.fecha=v2;guardar();}break;
     case 'dc-rubrica':var d1=disActual();if(d1&&S.rubricas[v2]){d1.rubricaId=v2;guardar();render();}break;
