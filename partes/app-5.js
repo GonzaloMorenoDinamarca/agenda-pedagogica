@@ -196,8 +196,8 @@ function traerDeCuenta(email,pass){
 /* =================== Acciones =================== */
 var A={
   /* Al cambiar de pestaña, el aviso de la anterior se va (era de esa pantalla); «Deshacer» sigue disponible. */
-  'tab':function(el){if(el.dataset.v!=='asistencia')ui.ficha=null;ui.confBorrar=null;ui.regAbierto=false;ui.msg=null;irA(el.dataset.v);},
-  'vista':function(el){ui[el.dataset.k]=el.dataset.v;ui.formError=null;ui.regAbierto=false;render();arriba();},
+  'tab':function(el){if(el.dataset.v!=='asistencia')ui.ficha=null;ui.confBorrar=null;ui.confCurso=null;ui.regAbierto=false;ui.msg=null;irA(el.dataset.v);},
+  'vista':function(el){ui[el.dataset.k]=el.dataset.v;ui.formError=null;ui.confCurso=null;ui.regAbierto=false;render();arriba();},
   'deshacer':function(){if(!ui.undo)return;S=normalizar(JSON.parse(ui.undo.snap));ui.undo=null;persistir();flash('Se deshizo el cambio.');render();},
   'copia-cerrar':function(){ui.copiaManual=null;render();},
   'recargar':function(){persistir();setTimeout(function(){location.reload();},300);},
@@ -224,7 +224,7 @@ var A={
   'reg-abrir':function(){ui.regAbierto=true;render();arriba('form-log');foco('lg-obj');},
   'log-listo':function(el){if(el.dataset.ctx==='clases')ui.cEdit=null;else ui.regAbierto=false;flash('Registro de clase guardado.');render();},
   'log-borrar':function(el){var g=grupoPorId(el.dataset.g),d=el.dataset.d;if(!g)return;conDeshacer('Registro de clase borrado.',function(){delete g.classLogs[d];});ui.regAbierto=false;ui.cEdit=null;render();},
-  'est-borrar':function(el){ui.confBorrar=el.dataset.id;render();},
+  'est-borrar':function(el){ui.confBorrar=el.dataset.id;render();arriba('conf-est');},
   'est-borrar-no':function(){ui.confBorrar=null;render();},
   'est-borrar-si':function(el){var g=grupoActual(),sid=el.dataset.id,e=estPorId(g,sid);ui.confBorrar=null;if(!e)return;
     conDeshacer('Se eliminó a '+nombreCompleto(e)+'.',function(){g.estudiantes=g.estudiantes.filter(function(s){return s.id!==sid;});Object.keys(g.asistencia).forEach(function(d){delete g.asistencia[d][sid];});Object.keys(g.notas).forEach(function(d){delete g.notas[d][sid];});delete cal(g).data[sid];
@@ -240,7 +240,9 @@ var A={
       D.filas.map(function(x){return '<tr><td>'+esc(apellidos(x.e))+', '+esc(x.e.n)+'</td><td>'+esc(x.e.c)+'</td><td>'+x.s.pct+' %</td><td>'+x.s.p+'</td><td>'+x.s.a+'</td><td>'+x.s.l+'</td><td>'+x.s.r+'</td>'+(hasCal?'<td>'+(x.prom!=null?num(x.prom,1):'—')+'</td>':'')+'</tr>';}).join('')+'</tbody></table>');},
   'curso-nuevo':function(){ui.cursoForm={asignatura:'',grupo:'',nivel:'4',lista:''};ui.formError=null;if(S.grupos.length){ui.tab='asistencia';ui.aVista='curso';ui.ficha=null;}render();arriba();foco('cn-asig');},
   'cn-cancelar':function(){ui.cursoForm=null;ui.formError=null;render();},
-  'curso-borrar':function(){var g=grupoActual();conDeshacer('Se eliminó el curso '+nombreGrupo(g)+'.',function(){S.grupos=S.grupos.filter(function(x){return x.id!==g.id;});});ui.grupoId=null;ui.aVista='lista';render();window.scrollTo(0,0);},
+  'curso-borrar':function(){var g=grupoActual();if(!g)return;ui.confCurso=g.id;render();arriba('conf-curso');},
+  'curso-borrar-no':function(){ui.confCurso=null;render();},
+  'curso-borrar-si':function(){var g=grupoActual();ui.confCurso=null;if(!g)return;conDeshacer('Se eliminó el curso '+nombreGrupo(g)+'.',function(){S.grupos=S.grupos.filter(function(x){return x.id!==g.id;});});ui.grupoId=null;ui.aVista='lista';render();window.scrollTo(0,0);},
   'pdf-actualizar':function(){var p=ui.pdfPend,g=grupoCoincide(p);if(!g)return;var nuevos=0,act=0;
     conDeshacer('Se actualizó la nómina.',function(){var por={};g.estudiantes.forEach(function(e){por[claveEst(e)]=e;});
       p.estudiantes.forEach(function(e){var ex=por[claveEst(e)];if(ex){if(ex.c!==normCurso(e.c)){ex.c=normCurso(e.c);act++;}}else{g.estudiantes.push({id:uid(),ap:e.ap,am:e.am,n:e.n,c:normCurso(e.c)});nuevos++;}});
