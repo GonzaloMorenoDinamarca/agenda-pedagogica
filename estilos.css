@@ -14,6 +14,7 @@
   --fill:#e2e2e2;
   --accent:#1d4a3a;
   --roja:#9a1414;
+  --ink-ret:#767676;
   --font-display:"Zilla Slab", Rockwell, "Roboto Slab", Georgia, serif;
   --font-body:"Atkinson Hyperlegible", "Segoe UI", Roboto, Arial, sans-serif;
   --fs-xs:.875rem; --fs-sm:1rem; --fs-md:1.125rem; --fs-lg:1.375rem; --fs-xl:1.75rem; --fs-xxl:2.25rem;
@@ -182,6 +183,12 @@ label.link{display:inline-flex;align-items:center}
 .dias .btn{min-width:56px}
 .grafico{width:100%;height:auto;max-width:100%;color:var(--ink);display:block}
 .grafico text{font-family:var(--font-body)}
+/* Retirado de la asignatura: nombre tachado y en un gris más claro, con su número de lista; en vez de P, A y T, la palabra «Retirado». */
+.tachado{text-decoration:line-through;text-decoration-thickness:2px}
+.alumno.ret .n-lista,.alumno.ret .al-nombre,.alumno.ret .al-nombre small{color:var(--ink-ret)}
+.ret-et{font-size:var(--fs-xs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-ret);border:2px solid var(--line-soft);border-radius:4px;padding:8px 12px;text-align:center}
+.alumno .ret-et{grid-column:span 2;min-width:220px}
+@media (max-width:480px){.alumno .ret-et{grid-area:obs;min-width:0}}
 
 /* ---------- Notas ---------- */
 .tabla-notas td,.tabla-notas th{padding:6px 8px}
@@ -205,6 +212,8 @@ td.prom{text-align:center;font-weight:700;font-family:var(--font-display);font-s
 .tabla-notas .pf{background:var(--fill)}
 /* En la ficha del estudiante, cada promedio cierra su bloque con una línea. */
 tr.fila-p td{border-top:2px solid var(--ink)}
+.tabla-notas tr.ret td,.tabla-notas tr.ret td small{color:var(--ink-ret)}
+.tabla-notas tr.ret .nota-in{color:var(--ink-ret);border-color:var(--line-soft)}
 tr.sep td{background:var(--fill);font-weight:700;font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.06em}
 
 /* ---------- Clases ---------- */
@@ -231,6 +240,7 @@ dl.campos dd{margin:0 0 6px;white-space:pre-wrap;overflow-wrap:anywhere}
 .eq-card.activo{border:3px solid var(--ink)}
 .eq-card-cab{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip-btn.ret{color:var(--ink-ret);border-color:var(--line-soft)}
 .chip-btn{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:2px 12px;border:2px solid var(--ink);border-radius:999px;background:var(--paper);font:700 var(--fs-xs) var(--font-body);color:var(--ink);cursor:pointer}
 .nav-grupo{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:end}
 @media (max-width:560px){.nav-grupo{grid-template-columns:1fr 1fr}.g-actual{grid-column:1/-1;order:-1}}
