@@ -170,9 +170,23 @@ function vFicha(g,e){
   h+='<form class="panel" data-form="est"><h3>Datos del estudiante</h3>'+vError()+
     '<div class="fila-2"><div class="campo"><label for="es-ap">Apellido paterno</label><input type="text" id="es-ap" data-f="es.ap" value="'+esc(d.ap)+'"></div><div class="campo"><label for="es-am">Apellido materno</label><input type="text" id="es-am" data-f="es.am" value="'+esc(d.am)+'"></div></div>'+
     '<div class="campo"><label for="es-n">Nombres</label><input type="text" id="es-n" data-f="es.n" value="'+esc(d.n)+'"></div>'+campoCurso('es',g,d)+
+    (ui.confBorrar===e.id?vConfBorrar(g,e):
     '<div class="acciones"><button type="submit" class="btn primary">Guardar datos</button>'+(e.ret?'':'<button type="button" class="btn" data-a="est-retirar" data-id="'+esc(e.id)+'">Marcar como retirado</button>')+'<button type="button" class="btn quiet" data-a="est-borrar" data-id="'+esc(e.id)+'">Eliminar estudiante</button></div>'+
-    (e.ret?'':'<p class="ayuda">«Marcar como retirado» es para quien se cambió de asignatura: sigue en la lista con el nombre tachado y ya no se cuenta al pasar lista. «Eliminar» lo borra con toda su asistencia y sus notas.</p>')+'</form>';
+    (e.ret?'':'<p class="ayuda">«Marcar como retirado» es para quien se cambió de asignatura: sigue en la lista con el nombre tachado y ya no se cuenta al pasar lista. «Eliminar» lo borra con toda su asistencia y sus notas.</p>'))+'</form>';
   return h+'</div></div></section>';
+}
+/* Eliminar a un estudiante borra todo lo suyo y no se recupera pasados unos segundos: antes se pide confirmar, con lo que se perdería a la vista.
+   «Sí, eliminar» queda más abajo que el botón «Eliminar estudiante», para que un doble toque en la tinta electrónica no lo active. */
+function vConfBorrar(g,e){
+  var nA=fechasAsistencia(g).filter(function(d){return g.asistencia[d][e.id];}).length;
+  var nO=Object.keys(g.notas).filter(function(d){return g.notas[d]&&g.notas[d][e.id];}).length;
+  var dn=cal(g).data[e.id]||{},nN=cal(g).columns.filter(function(c){return dn[c.id]!=null;}).length;
+  var nE=0;Object.keys(S.disertaciones).forEach(function(k){S.disertaciones[k].equipos.forEach(function(eq){if(eq.integrantes.indexOf(e.id)>=0)nE++;});});
+  var p=[];if(nA)p.push('asistencia de '+pl(nA,'clase','clases'));if(nO)p.push(pl(nO,'observación','observaciones'));if(nN)p.push(pl(nN,'nota','notas'));if(nE)p.push('su lugar en '+pl(nE,'equipo de disertación','equipos de disertación'));
+  var lista=p.length>1?p.slice(0,-1).join(', ')+' y '+p[p.length-1]:(p[0]||'');
+  return '<div class="form" role="alert" style="border-width:3px"><p><b>¿Eliminar a '+esc(nombreCompleto(e))+'?</b> '+(p.length?'Se borra con todo lo suyo: '+esc(lista)+'.':'No tiene asistencia, observaciones ni notas registradas.')+'</p>'+
+    (e.ret?'':'<p class="ayuda">Si se cambió de asignatura, mejor márcalo como retirado: sigue en la lista y conserva todo.</p>')+
+    '<div class="acciones"><button type="button" class="btn primary" data-a="est-borrar-si" data-id="'+esc(e.id)+'">Sí, eliminar</button>'+(e.ret?'':'<button type="button" class="btn" data-a="est-retirar" data-id="'+esc(e.id)+'">Marcar como retirado</button>')+'<button type="button" class="btn" data-a="est-borrar-no">Cancelar</button></div></div>';
 }
 function grafAsistencia(g,fechas){
   var ult=fechas.slice(-12),W=640,H=230,ml=40,mr=8,mt=18,mb=34,iw=W-ml-mr,ih=H-mt-mb,n=ult.length||1,bw=iw/n;
