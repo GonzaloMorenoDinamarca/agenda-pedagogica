@@ -55,8 +55,8 @@ function vNotas(){
   var multi=D.cursos.length>1&&!ui.nCurso,last=null,body='',ncol=cols.length+4+(D.todos?1:0);
   D.filas.forEach(function(x){
     if(multi&&x.e.c!==last){last=x.e.c;body+='<tr class="sep"><td colspan="'+ncol+'">'+esc(x.e.c||'Sin curso')+'</td></tr>';}
-    var c=cal(x.g);
-    body+='<tr><td class="col-nombre"><b>'+esc(apellidos(x.e))+'</b>, '+esc(x.e.n)+'<small>'+esc(x.e.c||'')+'</small></td>'+(D.todos?'<td>'+esc(tit(x.g.grupo||x.g.asignatura))+'</td>':'')+
+    var c=cal(x.g),rt=retirado(x.e);
+    body+='<tr'+(rt?' class="ret"':'')+'><td class="col-nombre">'+(rt?'<span class="tachado">':'')+'<b>'+esc(apellidos(x.e))+'</b>, '+esc(x.e.n)+(rt?'</span>':'')+'<small>'+esc(x.e.c||'')+(rt?(x.e.c?' · ':'')+'retirado':'')+'</small></td>'+(D.todos?'<td>'+esc(tit(x.g.grupo||x.g.asignatura))+'</td>':'')+
       cols.map(function(col){var cid=col.por[x.g.id];if(!cid)return '<td class="nc" title="Este grupo no tiene esta evaluación">—</td>';var v=(c.data[x.e.id]||{})[cid];
         return '<td class="nc"><input class="nota-in'+(v!=null&&v<4?' baja':'')+'" id="nt-'+esc(x.e.id)+'-'+esc(cid)+'" type="text" inputmode="decimal" autocomplete="off" data-f="nota" data-g="'+esc(x.g.id)+'" data-sid="'+esc(x.e.id)+'" data-c="'+esc(cid)+'" value="'+(v!=null?num(v,1):'')+'" aria-label="'+esc(col.name)+' de '+esc(nombreCorto(x.e))+'"></td>';}).join('');
     var p=promsEst(x.g,x.e.id);
@@ -159,7 +159,7 @@ function vDisConfig(d){
     '<div class="acciones"><button type="button" class="btn quiet" data-a="d-borrar">Eliminar esta disertación</button></div></div>';
   if(!g)return h+'<div class="alerta">El curso de esta disertación fue eliminado.</div></section>';
   var asignado={};d.equipos.forEach(function(eq){eq.integrantes.forEach(function(s){asignado[s]=eq.id;});});
-  var sin=ordenarEst(g.estudiantes.filter(function(e){return !asignado[e.id];}));
+  var sin=ordenarEst(g.estudiantes.filter(function(e){return !asignado[e.id]&&!retirado(e);}));
   if(!d.equipos.some(function(e){return e.id===ui.dEqActivo;}))ui.dEqActivo=d.equipos.length?d.equipos[d.equipos.length-1].id:null;
   var act=d.equipos.filter(function(e){return e.id===ui.dEqActivo;})[0];
   h+='<div class="panel"><h3>Sin equipo ('+sin.length+')</h3>'+(act?'<p class="ayuda">Toca un nombre para agregarlo a <b>'+esc(act.nombre||'el equipo')+'</b>. Para cambiar de equipo, toca «Agregar aquí» en otro.</p>':'<p class="ayuda">Crea un equipo para empezar a asignar estudiantes.</p>')+
@@ -169,7 +169,7 @@ function vDisConfig(d){
   d.equipos.forEach(function(eq){var esAct=eq.id===ui.dEqActivo;
     h+='<div class="eq-card'+(esAct?' activo':'')+'"><div class="eq-card-cab"><button type="button" class="btn'+(esAct?' primary':'')+'" data-a="d-eq-activar" data-id="'+esc(eq.id)+'" aria-pressed="'+esAct+'">'+(esAct?'Agregando aquí':'Agregar aquí')+'</button><button type="button" class="btn quiet" data-a="d-eq-borrar" data-id="'+esc(eq.id)+'">Eliminar equipo</button></div>'+
       '<div class="fila-2"><div class="campo"><label for="deq-n-'+esc(eq.id)+'">Nombre</label><input type="text" id="deq-n-'+esc(eq.id)+'" data-f="deq.nombre" data-id="'+esc(eq.id)+'" value="'+esc(eq.nombre)+'"></div><div class="campo"><label for="deq-t-'+esc(eq.id)+'">Tema</label><input type="text" id="deq-t-'+esc(eq.id)+'" data-f="deq.tema" data-id="'+esc(eq.id)+'" value="'+esc(eq.tema)+'"></div></div>'+
-      '<div class="chips">'+(eq.integrantes.length?ordenarEst(eq.integrantes.map(function(s){return m[s]||{id:s,ap:'(estudiante eliminado)',am:'',n:'',c:''};})).map(function(e){return '<button type="button" class="chip-btn" data-a="d-quitar" data-id="'+esc(e.id)+'" aria-label="Quitar a '+esc(nombreCorto(e))+'">'+esc(nombreCorto(e))+' ✕</button>';}).join(''):'<span class="ayuda">Sin integrantes.</span>')+'</div></div>';});
+      '<div class="chips">'+(eq.integrantes.length?ordenarEst(eq.integrantes.map(function(s){return m[s]||{id:s,ap:'(estudiante eliminado)',am:'',n:'',c:''};})).map(function(e){return '<button type="button" class="chip-btn'+(retirado(e)?' ret':'')+'" data-a="d-quitar" data-id="'+esc(e.id)+'" aria-label="Quitar a '+esc(nombreCorto(e))+'">'+(retirado(e)?'<span class="tachado">'+esc(nombreCorto(e))+'</span> · retirado':esc(nombreCorto(e)))+' ✕</button>';}).join(''):'<span class="ayuda">Sin integrantes.</span>')+'</div></div>';});
   if(d.equipos.length)h+='<div class="acciones"><button type="button" class="btn primary grande" data-a="d-ver" data-v="evaluar">Ir a evaluar</button></div>';
   return h+'</section>';
 }
