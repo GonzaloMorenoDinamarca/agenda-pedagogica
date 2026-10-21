@@ -176,7 +176,7 @@ function vFicha(g,e){
   return h+'</div></div></section>';
 }
 /* Eliminar a un estudiante borra todo lo suyo y no se recupera pasados unos segundos: antes se pide confirmar, con lo que se perdería a la vista.
-   «Sí, eliminar» queda más abajo que el botón «Eliminar estudiante», para que un doble toque en la tinta electrónica no lo active. */
+   El aviso queda entero en la parte alta de la pantalla y «Sí, eliminar» no cae donde estaba el dedo, así un doble toque en la tinta electrónica no lo activa. */
 function vConfBorrar(g,e){
   var nA=fechasAsistencia(g).filter(function(d){return g.asistencia[d][e.id];}).length;
   var nO=Object.keys(g.notas).filter(function(d){return g.notas[d]&&g.notas[d][e.id];}).length;
@@ -184,7 +184,7 @@ function vConfBorrar(g,e){
   var nE=0;Object.keys(S.disertaciones).forEach(function(k){S.disertaciones[k].equipos.forEach(function(eq){if(eq.integrantes.indexOf(e.id)>=0)nE++;});});
   var p=[];if(nA)p.push('asistencia de '+pl(nA,'clase','clases'));if(nO)p.push(pl(nO,'observación','observaciones'));if(nN)p.push(pl(nN,'nota','notas'));if(nE)p.push('su lugar en '+pl(nE,'equipo de disertación','equipos de disertación'));
   var lista=p.length>1?p.slice(0,-1).join(', ')+' y '+p[p.length-1]:(p[0]||'');
-  return '<div class="form" role="alert" style="border-width:3px"><p><b>¿Eliminar a '+esc(nombreCompleto(e))+'?</b> '+(p.length?'Se borra con todo lo suyo: '+esc(lista)+'.':'No tiene asistencia, observaciones ni notas registradas.')+'</p>'+
+  return '<div class="form" id="conf-est" role="alert" style="border-width:3px"><p><b>¿Eliminar a '+esc(nombreCompleto(e))+'?</b> '+(p.length?'Se borra con todo lo suyo: '+esc(lista)+'.':'No tiene asistencia, observaciones ni notas registradas.')+'</p>'+
     (e.ret?'':'<p class="ayuda">Si se cambió de asignatura, mejor márcalo como retirado: sigue en la lista y conserva todo.</p>')+
     '<div class="acciones"><button type="button" class="btn primary" data-a="est-borrar-si" data-id="'+esc(e.id)+'">Sí, eliminar</button>'+(e.ret?'':'<button type="button" class="btn" data-a="est-retirar" data-id="'+esc(e.id)+'">Marcar como retirado</button>')+'<button type="button" class="btn" data-a="est-borrar-no">Cancelar</button></div></div>';
 }
@@ -246,7 +246,7 @@ function vCurso(g){
     '<div class="campo"><label for="ne-n">Nombres</label><input type="text" id="ne-n" data-f="ne.n" value="'+esc(ne.n)+'" autocomplete="off"></div>'+campoCurso('ne',g,ne)+
     '<button type="submit" class="btn primary">Agregar a la lista</button><p class="ayuda">Queda ordenado con su curso y por apellido paterno.</p></form>';
   h+='<div class="panel"><h3>Cursos</h3><div class="acciones"><button type="button" class="btn" data-a="curso-nuevo">+ Nuevo curso</button><label class="btn" for="pdf-curso">Importar nómina en PDF</label><input type="file" id="pdf-curso" class="oculto" data-file="pdf" accept=".pdf,application/pdf"></div>'+
-    '<div class="acciones"><button type="button" class="btn quiet" data-a="curso-borrar">Eliminar este curso y todos sus datos</button></div></div>';
+    (ui.confCurso===g.id?vConfCurso(g):'<div class="acciones"><button type="button" class="btn quiet" data-a="curso-borrar">Eliminar este curso y todos sus datos</button></div>')+'</div>';
   h+='</div><div class="seccion">';
   h+='<form class="panel" data-form="curso-datos"><h3>Datos del curso</h3>'+vError()+
     '<div class="campo"><label for="cd-asig">Asignatura</label><input type="text" id="cd-asig" data-f="cd.asignatura" value="'+esc(cd.asignatura)+'"></div>'+
