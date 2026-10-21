@@ -163,7 +163,7 @@ function prepGrupo(g){
   if(!Array.isArray(g.calificaciones.columns))g.calificaciones.columns=[];
   if(!g.calificaciones.data||typeof g.calificaciones.data!=='object')g.calificaciones.data={};
   g.nivel=String(g.nivel||'4');g.asignatura=g.asignatura||'Sin asignatura';g.grupo=g.grupo||'';
-  g.estudiantes.forEach(function(e){if(!e.id)e.id=uid();e.ap=e.ap||'';e.am=e.am||'';e.n=e.n||'';e.c=normCurso(e.c);});
+  g.estudiantes.forEach(function(e){if(!e.id)e.id=uid();e.ap=e.ap||'';e.am=e.am||'';e.n=e.n||'';e.c=normCurso(e.c);if(e.ret!=null&&!/^\d{4}-\d{2}-\d{2}$/.test(e.ret))delete e.ret;});
   g.estudiantes.sort(function(a,b){return cmpEst(a,b);});
 }
 function prepRubrica(r){
@@ -280,6 +280,3 @@ function opcionesGrupos(selId,extraNivel){
 function estPorId(g,sid){if(!g)return null;for(var i=0;i<g.estudiantes.length;i++)if(g.estudiantes[i].id===sid)return g.estudiantes[i];return null;}
 function mapaEst(g){var m={};(g?g.estudiantes:[]).forEach(function(e){m[e.id]=e;});return m;}
 function cursosDe(g){var s={};(g?g.estudiantes:[]).forEach(function(e){if(e.c)s[e.c]=1;});return Object.keys(s).sort(cmp);}
-function statsEst(g,sid){var p=0,a=0,l=0,r=0;Object.keys(g.asistencia).forEach(function(d){var s=(g.asistencia[d]||{})[sid];if(s==='present')p++;else if(s==='absent')a++;else if(s==='late')l++;if(s)r++;});return {p:p,a:a,l:l,r:r,pct:r?Math.round(p/r*100):null};}
-function enRiesgo(s){return s.r>=3&&s.pct<75;}
-function conteoDia(g,f){var att=g.asistencia[f]||{};var p=0,a=0,l=0;g.estudiantes.forEach(function(e){var s=att[e.id];if(s==='present')p++;else if(s==='absent')a++;else if(s==='late')l++;});return {p:p,a:a,l:l,sin:g.estudiantes.length-p-a-l,total:g.estudiantes.length};}
