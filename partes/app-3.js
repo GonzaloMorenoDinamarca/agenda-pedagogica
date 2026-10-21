@@ -2,6 +2,18 @@
   h+='<div class="panel"><h3>Descargar e imprimir</h3><div class="acciones"><button type="button" class="btn" data-a="exp-asis" data-v="dia">Asistencia del día (Excel)</button><button type="button" class="btn" data-a="exp-asis" data-v="todo">Toda la asistencia (Excel)</button><button type="button" class="btn" data-a="exp-nomina">Nómina (CSV)</button><button type="button" class="btn" data-a="imp-lista">Imprimir lista del día</button></div></div>';
   return h+'</div></div>';
 }
+/* Eliminar un curso borra su nómina, asistencia, notas y registros: antes se pide confirmar, con lo que se perdería a la vista.
+   Igual que con un estudiante: el aviso sube entero a la vista y «Sí, eliminar el curso» no cae donde estaba el dedo. */
+function vConfCurso(g){
+  var nE=g.estudiantes.length,nA=fechasAsistencia(g).length,nN=cal(g).columns.length,nR=Object.keys(g.classLogs).length;
+  var nD=Object.keys(S.disertaciones).filter(function(k){return S.disertaciones[k].grupoId===g.id;}).length;
+  var p=[];if(nE)p.push(pl(nE,'estudiante','estudiantes'));if(nA)p.push('asistencia de '+pl(nA,'clase','clases'));if(nN)p.push(pl(nN,'evaluación','evaluaciones')+' con sus notas');if(nR)p.push(pl(nR,'registro de clase','registros de clase'));
+  var lista=p.length>1?p.slice(0,-1).join(', ')+' y '+p[p.length-1]:(p[0]||'');
+  return '<div class="form" id="conf-curso" role="alert" style="border-width:3px"><p><b>¿Eliminar el curso '+esc(nombreGrupo(g))+'?</b> '+(p.length?'Se borra con todo lo suyo: '+esc(lista)+'.':'No tiene estudiantes ni datos registrados.')+
+    (nD?' '+(nD===1?'Su disertación queda guardada, pero sin curso.':'Sus '+nD+' disertaciones quedan guardadas, pero sin curso.'):'')+'</p>'+
+    (p.length?'<p class="ayuda">Si quieres guardar una copia antes, descarga un respaldo en «Respaldo y datos».</p>':'')+
+    '<div class="acciones"><button type="button" class="btn primary" data-a="curso-borrar-si">Sí, eliminar el curso</button><button type="button" class="btn" data-a="curso-borrar-no">Cancelar</button></div></div>';
+}
 
 /* =================== Vista: Notas =================== */
 /* Semestres: cada evaluación es del 1° o del 2°. Si no lo dice, se deduce de su fecha (hasta junio, 1°) y queda guardado; se cambia al crearla o editarla. */
