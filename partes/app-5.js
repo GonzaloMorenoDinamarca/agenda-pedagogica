@@ -24,16 +24,16 @@ function parsearLista(txt,cursoDef){
 function tablaLista(g,f){
   var est=ordenarEst(g.estudiantes),att=g.asistencia[f]||{},c=conteoDia(g,f);
   return '<p>'+pl(c.total,'estudiante','estudiantes')+' · '+pl(c.p,'presente','presentes')+' · '+pl(c.a,'ausente','ausentes')+' · '+pl(c.l,'atraso','atrasos')+(c.sin?' · '+c.sin+' sin marcar':'')+'</p><table><thead><tr><th>N°</th><th>Apellidos</th><th>Nombres</th><th>Curso</th><th>Asistencia</th></tr></thead><tbody>'+
-    est.map(function(e,i){return '<tr><td>'+(i+1)+'</td><td>'+esc(apellidos(e))+'</td><td>'+esc(e.n)+'</td><td>'+esc(e.c)+'</td><td>'+(ATT[att[e.id]]||'—')+'</td></tr>';}).join('')+'</tbody></table>';
+    est.map(function(e,i){var r=retEn(e,f);return '<tr><td>'+(i+1)+'</td><td>'+(r?'<s>'+esc(apellidos(e))+'</s>':esc(apellidos(e)))+'</td><td>'+(r?'<s>'+esc(e.n)+'</s>':esc(e.n))+'</td><td>'+esc(e.c)+'</td><td>'+(r?'Retirado':(ATT[att[e.id]]||'—'))+'</td></tr>';}).join('')+'</tbody></table>';
 }
 function exportarAsistencia(g,modo){
   var fechas=modo==='dia'?[ui.fecha]:fechasAsistencia(g);
   if(!fechas.length){flash('Este curso aún no tiene asistencia registrada.');render();return;}
   var est=ordenarEst(g.estudiantes);
-  var html='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"><style>table{border-collapse:collapse;font-family:Calibri,Arial,sans-serif;font-size:11pt}th{background:#1e1e1e;color:#fff;font-weight:bold;padding:6px 12px;border:1px solid #000;text-align:center;white-space:nowrap}td{padding:5px 12px;border:1px solid #bbb;white-space:nowrap}.c{text-align:center}.aus{background:#f2c4c4;font-weight:bold;text-align:center}.atr{background:#f5e6a8;font-weight:bold;text-align:center}.pre{text-align:center}</style></head><body><table><thead><tr><th>N°</th><th>Apellido Paterno</th><th>Apellido Materno</th><th>Nombre</th><th>Curso</th>'+
+  var html='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"><style>table{border-collapse:collapse;font-family:Calibri,Arial,sans-serif;font-size:11pt}th{background:#1e1e1e;color:#fff;font-weight:bold;padding:6px 12px;border:1px solid #000;text-align:center;white-space:nowrap}td{padding:5px 12px;border:1px solid #bbb;white-space:nowrap}.c{text-align:center}.aus{background:#f2c4c4;font-weight:bold;text-align:center}.atr{background:#f5e6a8;font-weight:bold;text-align:center}.pre{text-align:center}.ret{color:#777;text-align:center}</style></head><body><table><thead><tr><th>N°</th><th>Apellido Paterno</th><th>Apellido Materno</th><th>Nombre</th><th>Curso</th>'+
     fechas.map(function(d){return '<th>'+d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4)+'</th>';}).join('')+(modo==='dia'?'':'<th>% Asistencia</th>')+'</tr></thead><tbody>';
   est.forEach(function(e,i){html+='<tr><td class="c">'+(i+1)+'</td><td>'+esc(e.ap)+'</td><td>'+esc(e.am)+'</td><td>'+esc(e.n)+'</td><td class="c">'+esc(e.c)+'</td>'+
-    fechas.map(function(d){var s=(g.asistencia[d]||{})[e.id];return '<td class="'+(s==='absent'?'aus':s==='late'?'atr':'pre')+'">'+(s==='present'?'PRESENTE':s==='absent'?'AUSENTE':s==='late'?'ATRASO':'—')+'</td>';}).join('')+
+    fechas.map(function(d){if(retEn(e,d))return '<td class="ret">RETIRADO</td>';var s=(g.asistencia[d]||{})[e.id];return '<td class="'+(s==='absent'?'aus':s==='late'?'atr':'pre')+'">'+(s==='present'?'PRESENTE':s==='absent'?'AUSENTE':s==='late'?'ATRASO':'—')+'</td>';}).join('')+
     (modo==='dia'?'':'<td class="c">'+(function(){var s=statsEst(g,e.id);return s.pct==null?'—':s.pct+' %';})()+'</td>')+'</tr>';});
   html+='</tbody></table></body></html>';
   descargar('asistencia_'+slug(g.asignatura)+'_'+slug(g.grupo)+'_'+(modo==='dia'?ui.fecha:'completo')+'.xls',html,'application/vnd.ms-excel;charset=utf-8');render();
@@ -215,7 +215,7 @@ var A={
   'marcar':function(el){var g=grupoActual();if(!g)return;var sid=el.dataset.id;setAtt(g,ui.fecha,sid,el.dataset.v);var st=(g.asistencia[ui.fecha]||{})[sid]||null;
     var grp=el.closest('.pat');if(grp)grp.querySelectorAll('button').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.v===st));});
     var c=document.getElementById('conteo');if(c)c.innerHTML=vConteo(g);},
-  'todos-presentes':function(){var g=grupoActual();if(!g)return;if(!g.asistencia[ui.fecha])g.asistencia[ui.fecha]={};var n=0;g.estudiantes.forEach(function(e){if(!g.asistencia[ui.fecha][e.id]){g.asistencia[ui.fecha][e.id]='present';n++;}});guardar();flash(pl(n,'estudiante marcado como presente','estudiantes marcados como presentes')+'. Toca P de nuevo para quitar a alguien.');render();},
+  'todos-presentes':function(){var g=grupoActual();if(!g)return;if(!g.asistencia[ui.fecha])g.asistencia[ui.fecha]={};var n=0;g.estudiantes.forEach(function(e){if(!retEn(e,ui.fecha)&&!g.asistencia[ui.fecha][e.id]){g.asistencia[ui.fecha][e.id]='present';n++;}});guardar();flash(pl(n,'estudiante marcado como presente','estudiantes marcados como presentes')+'. Toca P de nuevo para quitar a alguien.');render();},
   'orden':function(el){ui.soloApellido=el.dataset.v==='apellido';render();},
   'ficha':function(el){ui.ficha=el.dataset.id;ui.estDraft=null;ui.formError=null;if(ui.tab!=='asistencia')ui.tab='asistencia';render();window.scrollTo(0,0);},
   'ficha-obs':function(el){ui.ficha=el.dataset.id;ui.estDraft=null;ui.formError=null;render();window.scrollTo(0,0);foco('obs-txt');},
@@ -228,8 +228,10 @@ var A={
     conDeshacer('Se eliminó a '+nombreCompleto(e)+'.',function(){g.estudiantes=g.estudiantes.filter(function(s){return s.id!==sid;});Object.keys(g.asistencia).forEach(function(d){delete g.asistencia[d][sid];});Object.keys(g.notas).forEach(function(d){delete g.notas[d][sid];});delete cal(g).data[sid];
       Object.keys(S.disertaciones).forEach(function(k){S.disertaciones[k].equipos.forEach(function(eq){eq.integrantes=eq.integrantes.filter(function(s){return s!==sid;});});});});
     ui.ficha=null;ui.estDraft=null;render();},
+  'est-retirar':function(el){var g=grupoActual(),e=estPorId(g,el.dataset.id);if(!e)return;conDeshacer('Retiro registrado: '+nombreCompleto(e)+' sigue en la lista con el nombre tachado y ya no se cuenta al pasar lista.',function(){e.ret=hoyISO();});render();},
+  'est-reincorporar':function(el){var g=grupoActual(),e=estPorId(g,el.dataset.id);if(!e)return;delete e.ret;guardar();flash(nombreCompleto(e)+' volvió a la lista.');render();},
   'exp-asis':function(el){exportarAsistencia(grupoActual(),el.dataset.v);},
-  'exp-nomina':function(){var g=grupoActual();descargar('nomina_'+slug(g.asignatura)+'_'+slug(g.grupo)+'.csv',aCSV([['N° lista','Apellido Paterno','Apellido Materno','Nombre(s)','Curso']].concat(ordenarEst(g.estudiantes).map(function(e,i){return [i+1,e.ap,e.am,e.n,e.c];}))),'text/csv;charset=utf-8');render();},
+  'exp-nomina':function(){var g=grupoActual();descargar('nomina_'+slug(g.asignatura)+'_'+slug(g.grupo)+'.csv',aCSV([['N° lista','Apellido Paterno','Apellido Materno','Nombre(s)','Curso','Estado']].concat(ordenarEst(g.estudiantes).map(function(e,i){return [i+1,e.ap,e.am,e.n,e.c,e.ret?'Retirado desde el '+e.ret.slice(8,10)+'/'+e.ret.slice(5,7)+'/'+e.ret.slice(0,4):''];}))),'text/csv;charset=utf-8');render();},
   'imp-lista':function(){var g=grupoActual();imprimir('Lista de asistencia · '+fLarga(ui.fecha),nombreGrupo(g),tablaLista(g,ui.fecha));},
   'imp-stats':function(){var g=grupoActual(),D=datosStats(g),hasCal=cal(g).columns.length>0;
     imprimir('Estadísticas de asistencia',nombreGrupo(g),'<p>'+pl(D.fechas.length,'clase','clases')+' · asistencia promedio '+(D.prom!=null?D.prom+' %':'—')+' · '+D.bajo+' bajo 75 %</p><table><thead><tr><th>Estudiante</th><th>Curso</th><th>Asistencia</th><th>P</th><th>A</th><th>T</th><th>Clases</th>'+(hasCal?'<th>Prom. notas</th>':'')+'</tr></thead><tbody>'+
@@ -241,8 +243,8 @@ var A={
     conDeshacer('Se actualizó la nómina.',function(){var por={};g.estudiantes.forEach(function(e){por[claveEst(e)]=e;});
       p.estudiantes.forEach(function(e){var ex=por[claveEst(e)];if(ex){if(ex.c!==normCurso(e.c)){ex.c=normCurso(e.c);act++;}}else{g.estudiantes.push({id:uid(),ap:e.ap,am:e.am,n:e.n,c:normCurso(e.c)});nuevos++;}});
       if(p.profesor)g.profesor=p.profesor;g.estudiantes.sort(function(a,b){return cmpEst(a,b);});});
-    var fuera=g.estudiantes.filter(function(e){return !p.estudiantes.some(function(x){return claveEst(x)===claveEst(e);});}).length;
-    ui.pdfPend=null;ui.grupoId=g.id;ui.tab='asistencia';ui.aVista='lista';flash('Nómina actualizada: '+pl(nuevos,'agregado','agregados')+', '+act+' con curso corregido.'+(fuera?' '+fuera+' de la lista no aparecen en el PDF; puedes quitarlos desde su ficha.':''));render();},
+    var fuera=g.estudiantes.filter(function(e){return !retirado(e)&&!p.estudiantes.some(function(x){return claveEst(x)===claveEst(e);});}).length;
+    ui.pdfPend=null;ui.grupoId=g.id;ui.tab='asistencia';ui.aVista='lista';flash('Nómina actualizada: '+pl(nuevos,'agregado','agregados')+', '+act+' con curso corregido.'+(fuera?' '+fuera+' de la lista no aparecen en el PDF; desde su ficha puedes marcarlos como retirados o eliminarlos.':''));render();},
   'pdf-nuevo':function(){var p=ui.pdfPend;var g={id:uid(),asignatura:p.asignatura||'Sin asignatura',grupo:p.grupo||'',nivel:String(p.nivel||'4'),profesor:p.profesor||'',estudiantes:[],asistencia:{},notas:{},classLogs:{},calificaciones:{columns:[],data:{}}};
     agregarEstudiantes(g,p.estudiantes);conDeshacer('Se creó el curso '+nombreGrupo(g)+'.',function(){S.grupos.push(g);});ui.pdfPend=null;ui.grupoId=g.id;ui.tab='asistencia';ui.aVista='lista';flash('Curso creado con '+pl(g.estudiantes.length,'estudiante','estudiantes')+'.');render();},
   'pdf-cancelar':function(){ui.pdfPend=null;render();},
@@ -257,5 +259,5 @@ var A={
   'exp-notas':function(){exportarNotas();},
   'imp-notas':function(){var D=datosNotas(),cols=colsVista(D.cols);if(!D.cols.length){flash('No hay evaluaciones para imprimir.');render();return;}
     imprimir('Notas · '+(ui.nSem==='a'?'año completo':ui.nSem+'° semestre'),D.todos?D.nivel+'° medio · todos los grupos':nombreGrupo(D.gs[0]),(ui.nCurso?'<p>Curso: '+esc(ui.nCurso)+'</p>':'')+'<table><thead><tr><th>N°</th><th>Estudiante</th><th>Curso</th>'+cols.map(function(c){return '<th>'+esc(c.name)+'</th>';}).join('')+'<th>P1</th><th>P2</th><th>Pf</th></tr></thead><tbody>'+
-      D.filas.map(function(x,i){var c=cal(x.g);var p=promsEst(x.g,x.e.id);return '<tr><td>'+(i+1)+'</td><td>'+esc(apellidos(x.e))+', '+esc(x.e.n)+'</td><td>'+esc(x.e.c)+'</td>'+cols.map(function(col){var cid=col.por[x.g.id];var v=cid?(c.data[x.e.id]||{})[cid]:null;return '<td>'+(v!=null?num(v,1):'—')+'</td>';}).join('')+[p.p1,p.p2,p.pf].map(function(v,j){var t=v!=null?num(v,1):'—';return '<td>'+(j===2?'<b>'+t+'</b>':t)+'</td>';}).join('')+'</tr>';}).join('')+'</tbody></table><p>P1 y P2: promedio de las notas de cada semestre. Pf: promedio de P1 y P2.</p>');},
+      D.filas.map(function(x,i){var c=cal(x.g);var p=promsEst(x.g,x.e.id);return '<tr><td>'+(i+1)+'</td><td>'+(retirado(x.e)?'<s>'+esc(apellidos(x.e))+', '+esc(x.e.n)+'</s> (retirado)':esc(apellidos(x.e))+', '+esc(x.e.n))+'</td><td>'+esc(x.e.c)+'</td>'+cols.map(function(col){var cid=col.por[x.g.id];var v=cid?(c.data[x.e.id]||{})[cid]:null;return '<td>'+(v!=null?num(v,1):'—')+'</td>';}).join('')+[p.p1,p.p2,p.pf].map(function(v,j){var t=v!=null?num(v,1):'—';return '<td>'+(j===2?'<b>'+t+'</b>':t)+'</td>';}).join('')+'</tr>';}).join('')+'</tbody></table><p>P1 y P2: promedio de las notas de cada semestre. Pf: promedio de P1 y P2.</p>');},
   /* Clases */
