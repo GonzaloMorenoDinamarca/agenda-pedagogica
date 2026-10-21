@@ -196,7 +196,7 @@ function traerDeCuenta(email,pass){
 /* =================== Acciones =================== */
 var A={
   /* Al cambiar de pestaña, el aviso de la anterior se va (era de esa pantalla); «Deshacer» sigue disponible. */
-  'tab':function(el){if(el.dataset.v!=='asistencia')ui.ficha=null;ui.regAbierto=false;ui.msg=null;irA(el.dataset.v);},
+  'tab':function(el){if(el.dataset.v!=='asistencia')ui.ficha=null;ui.confBorrar=null;ui.regAbierto=false;ui.msg=null;irA(el.dataset.v);},
   'vista':function(el){ui[el.dataset.k]=el.dataset.v;ui.formError=null;ui.regAbierto=false;render();arriba();},
   'deshacer':function(){if(!ui.undo)return;S=normalizar(JSON.parse(ui.undo.snap));ui.undo=null;persistir();flash('Se deshizo el cambio.');render();},
   'copia-cerrar':function(){ui.copiaManual=null;render();},
@@ -217,18 +217,20 @@ var A={
     var c=document.getElementById('conteo');if(c)c.innerHTML=vConteo(g);},
   'todos-presentes':function(){var g=grupoActual();if(!g)return;if(!g.asistencia[ui.fecha])g.asistencia[ui.fecha]={};var n=0;g.estudiantes.forEach(function(e){if(!retEn(e,ui.fecha)&&!g.asistencia[ui.fecha][e.id]){g.asistencia[ui.fecha][e.id]='present';n++;}});guardar();flash(pl(n,'estudiante marcado como presente','estudiantes marcados como presentes')+'. Toca P de nuevo para quitar a alguien.');render();},
   'orden':function(el){ui.soloApellido=el.dataset.v==='apellido';render();},
-  'ficha':function(el){ui.ficha=el.dataset.id;ui.estDraft=null;ui.formError=null;if(ui.tab!=='asistencia')ui.tab='asistencia';render();window.scrollTo(0,0);},
-  'ficha-obs':function(el){ui.ficha=el.dataset.id;ui.estDraft=null;ui.formError=null;render();window.scrollTo(0,0);foco('obs-txt');},
-  'ficha-cerrar':function(){ui.ficha=null;ui.estDraft=null;ui.formError=null;render();},
+  'ficha':function(el){ui.ficha=el.dataset.id;ui.estDraft=null;ui.confBorrar=null;ui.formError=null;if(ui.tab!=='asistencia')ui.tab='asistencia';render();window.scrollTo(0,0);},
+  'ficha-obs':function(el){ui.ficha=el.dataset.id;ui.estDraft=null;ui.confBorrar=null;ui.formError=null;render();window.scrollTo(0,0);foco('obs-txt');},
+  'ficha-cerrar':function(){ui.ficha=null;ui.estDraft=null;ui.confBorrar=null;ui.formError=null;render();},
   'obs-borrar':function(el){var g=grupoActual();var sid=el.dataset.id;conDeshacer('Observación borrada.',function(){if(g.notas[ui.fecha]){delete g.notas[ui.fecha][sid];if(!Object.keys(g.notas[ui.fecha]).length)delete g.notas[ui.fecha];}});render();},
   'reg-abrir':function(){ui.regAbierto=true;render();arriba('form-log');foco('lg-obj');},
   'log-listo':function(el){if(el.dataset.ctx==='clases')ui.cEdit=null;else ui.regAbierto=false;flash('Registro de clase guardado.');render();},
   'log-borrar':function(el){var g=grupoPorId(el.dataset.g),d=el.dataset.d;if(!g)return;conDeshacer('Registro de clase borrado.',function(){delete g.classLogs[d];});ui.regAbierto=false;ui.cEdit=null;render();},
-  'est-borrar':function(el){var g=grupoActual(),sid=el.dataset.id,e=estPorId(g,sid);if(!e)return;
+  'est-borrar':function(el){ui.confBorrar=el.dataset.id;render();},
+  'est-borrar-no':function(){ui.confBorrar=null;render();},
+  'est-borrar-si':function(el){var g=grupoActual(),sid=el.dataset.id,e=estPorId(g,sid);ui.confBorrar=null;if(!e)return;
     conDeshacer('Se eliminó a '+nombreCompleto(e)+'.',function(){g.estudiantes=g.estudiantes.filter(function(s){return s.id!==sid;});Object.keys(g.asistencia).forEach(function(d){delete g.asistencia[d][sid];});Object.keys(g.notas).forEach(function(d){delete g.notas[d][sid];});delete cal(g).data[sid];
       Object.keys(S.disertaciones).forEach(function(k){S.disertaciones[k].equipos.forEach(function(eq){eq.integrantes=eq.integrantes.filter(function(s){return s!==sid;});});});});
     ui.ficha=null;ui.estDraft=null;render();},
-  'est-retirar':function(el){var g=grupoActual(),e=estPorId(g,el.dataset.id);if(!e)return;conDeshacer('Retiro registrado: '+nombreCompleto(e)+' sigue en la lista con el nombre tachado y ya no se cuenta al pasar lista.',function(){e.ret=hoyISO();});render();},
+  'est-retirar':function(el){var g=grupoActual(),e=estPorId(g,el.dataset.id);if(!e)return;conDeshacer('Retiro registrado: '+nombreCompleto(e)+' sigue en la lista con el nombre tachado y ya no se cuenta al pasar lista.',function(){e.ret=hoyISO();});ui.confBorrar=null;render();},
   'est-reincorporar':function(el){var g=grupoActual(),e=estPorId(g,el.dataset.id);if(!e)return;delete e.ret;guardar();flash(nombreCompleto(e)+' volvió a la lista.');render();},
   'exp-asis':function(el){exportarAsistencia(grupoActual(),el.dataset.v);},
   'exp-nomina':function(){var g=grupoActual();descargar('nomina_'+slug(g.asignatura)+'_'+slug(g.grupo)+'.csv',aCSV([['N° lista','Apellido Paterno','Apellido Materno','Nombre(s)','Curso','Estado']].concat(ordenarEst(g.estudiantes).map(function(e,i){return [i+1,e.ap,e.am,e.n,e.c,e.ret?'Retirado desde el '+e.ret.slice(8,10)+'/'+e.ret.slice(5,7)+'/'+e.ret.slice(0,4):''];}))),'text/csv;charset=utf-8');render();},
