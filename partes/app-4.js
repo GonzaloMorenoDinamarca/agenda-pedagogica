@@ -22,7 +22,7 @@ function vDisResumen(d){
   if(!g||!r)return h+'<div class="alerta">'+(!g?'El curso de esta disertación fue eliminado.':'La rúbrica de esta disertación fue eliminada.')+'</div></section>';
   var F=filasDis(d,r,g),notas=F.filter(function(x){return x.res.nota!=null;}).map(function(x){return x.res.nota;});
   var prom=notas.length?promedioDe(notas):null,apr=notas.filter(function(n){return n>=4;}).length;
-  var asign={};d.equipos.forEach(function(eq){eq.integrantes.forEach(function(s){asign[s]=1;});});var sinEq=g.estudiantes.filter(function(e){return !asign[e.id];}).length;
+  var asign={};d.equipos.forEach(function(eq){eq.integrantes.forEach(function(s){asign[s]=1;});});var sinEq=g.estudiantes.filter(function(e){return !asign[e.id]&&!retirado(e);}).length;
   h+='<div class="stats"><div class="stat">Con nota<b>'+notas.length+' de '+F.length+'</b></div><div class="stat">Promedio<b>'+(prom!=null?num(prom,1):'—')+'</b></div><div class="stat">Aprobados<b>'+apr+(notas.length?' ('+Math.round(apr/notas.length*100)+' %)':'')+'</b></div><div class="stat">Rango<b>'+(notas.length?num(Math.min.apply(null,notas),1)+' – '+num(Math.max.apply(null,notas),1):'—')+'</b></div></div>';
   if(sinEq)h+='<p class="ayuda">'+sinEq+(sinEq===1?' estudiante del curso no está':' estudiantes del curso no están')+' en ningún equipo.</p>';
   var np=d.notasPasadas;
