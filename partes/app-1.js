@@ -68,15 +68,23 @@ function parseNota(v){v=String(v==null?'':v).trim().replace(',','.');if(/^\d{2}$
 /* Escala chilena 1,0–7,0: el 4,0 se alcanza con exigencia × puntaje máximo; redondeo a un decimal. */
 function nota(p,max,e){e=e||0.6;if(!(max>0))return null;var corte=e*max,n;if(p<corte)n=1+3*p/corte;else n=4+3*(p-corte)/(max-corte);n=Math.round(n*10+1e-9)/10;return Math.min(7,Math.max(1,n));}
 function sugerirTiempo(seg,min,nNiv){var d=Math.abs(seg/60-min);var li=d<=1?0:d<=3?1:d<=5?2:3;return Math.min(li,Math.max(0,nNiv-1));}
-/* Nombre y descriptores del criterio Tiempo para m minutos, con los mismos tramos de sugerirTiempo (±1, ±3 y ±5 minutos). */
-function textosTiempo(m){function u(n){return n===1?' minuto':' minutos';}function r(a,b){return a<=0?'menos de '+b:'entre '+a+' y '+b;}function c(t){return t.charAt(0).toUpperCase()+t.slice(1);}
+/* Nombre y descriptores del criterio Tiempo para m minutos, con los mismos tramos de sugerirTiempo (±1, ±3 y ±5 minutos).
+   Se escriben con minutos y segundos para que los tramos no se toquen: con 15 minutos, 14:00 es «Sobresaliente» y 13:59, «Logrado». */
+function textosTiempo(m){function h(n){return n+':00';}function a(n){return (n-1)+':59';}function d(n){return n+':01';}function c(t){return t.charAt(0).toUpperCase()+t.slice(1);}
+  var bajo1=m-3>0?'de '+h(m-3)+' a '+a(m-1):m-1>0?'menos de '+h(m-1):'',bajo2=m-5>0?'de '+h(m-5)+' a '+a(m-3):m-3>0?'menos de '+h(m-3):'';
+  return {nombre:'Tiempo ('+m+(m===1?' minuto':' minutos')+')',desc:[c((m-1>0?'de '+h(m-1)+' a ':'hasta ')+h(m+1)+' minutos.'),c((bajo1?bajo1+', o ':'')+'de '+d(m+1)+' a '+h(m+3)+' minutos.'),
+    c((bajo2?bajo2+', o ':'')+'de '+d(m+3)+' a '+h(m+5)+' minutos.'),c((m-5>0?'menos de '+h(m-5)+' o ':'')+'más de '+h(m+5)+' minutos.')]};}
+/* Los textos de antes de la v17 («Entre 14 y 16 minutos.»), cuyos tramos se tocaban: solo para reconocerlos y cambiarlos. */
+function textosTiempo1(m){function u(n){return n===1?' minuto':' minutos';}function r(a,b){return a<=0?'menos de '+b:'entre '+a+' y '+b;}function c(t){return t.charAt(0).toUpperCase()+t.slice(1);}
   return {nombre:'Tiempo ('+m+u(m)+')',desc:[c(r(m-1,m+1)+u(m+1)+'.'),c((m-1>0?r(m-3,m-1)+u(m-1)+', o ':'')+'entre '+(m+1)+' y '+(m+3)+(m-1>0?'.':u(m+3)+'.')),
     c((m-3>0?r(m-5,m-3)+u(m-3)+', o ':'')+'entre '+(m+3)+' y '+(m+5)+(m-3>0?'.':u(m+5)+'.')),c((m-5>0?'menos de '+(m-5)+' o ':'')+'más de '+(m+5)+u(m+5)+'.')]};}
 /* Si cambian los minutos previstos, el criterio «Tiempo (N minutos)» se pone al día. Sus descriptores solo cambian si son los
    automáticos (los que la agenda escribió); un texto escrito a mano no se toca. Devuelve los criterios que cambiaron. */
 function ajustarTiempo(r){var m=Math.round(+r.minutos),ch=[];if(!(m>0))return ch;
-  r.criterios.forEach(function(k,j){var x=/^Tiempo \((\d+) minutos?\)$/.exec(k.nombre||'');if(!x||+x[1]===m)return;var a=textosTiempo(+x[1]),b=textosTiempo(m);
-    k.nombre=b.nombre;if(k.auto==='tiempo'&&r.niveles.length===4&&a.desc.every(function(t,i){return k.descriptores[i]===t;}))k.descriptores=b.desc.slice();ch.push(j);});return ch;}
+  r.criterios.forEach(function(k,j){var x=/^Tiempo \((\d+) minutos?\)$/.exec(k.nombre||'');if(!x||+x[1]===m)return;var b=textosTiempo(m);
+    k.nombre=b.nombre;if(k.auto==='tiempo'&&r.niveles.length===4&&textosDeAgenda(k,+x[1]))k.descriptores=b.desc.slice();ch.push(j);});return ch;}
+/* ¿Los descriptores son los que escribió la agenda para m minutos (de ahora o de antes de la v17)? */
+function textosDeAgenda(k,m){return [textosTiempo(m),textosTiempo1(m)].some(function(t){return t.desc.every(function(x,i){return k.descriptores[i]===x;});});}
 
 /* =================== Rúbricas de base =================== */
 var NIVELES4=[{nombre:'Sobresaliente',puntos:4},{nombre:'Logrado',puntos:3},{nombre:'Medianamente logrado',puntos:2},{nombre:'Por lograr',puntos:1}];
@@ -103,7 +111,7 @@ function rubricaPropuesta(){
     crit('p3','Fuentes de información',1,'equipo',['Cita en las diapositivas tres o más fuentes confiables (artículos científicos, MINSAL, OMS u otra institución) con autor y año.','Cita dos fuentes confiables con autor y año, o tres o más con datos incompletos.','Cita una sola fuente confiable, o solo fuentes sin autor verificable (blogs, sitios anónimos).','No cita fuentes.']),
     crit('p4','Estructura',1,'equipo',['Tiene introducción con propósito o pregunta, desarrollo en orden lógico y cierre que retoma las ideas principales.','Tiene las tres partes, pero una está incompleta o hay una diapositiva fuera de orden.','Falta una de las tres partes (introducción, desarrollo o cierre).','Faltan dos o más partes, o la información se presenta sin orden.']),
     crit('p5','Soporte visual',1,'equipo',['Todas las diapositivas se leen desde el fondo de la sala, tienen 6 líneas de texto o menos, y sus imágenes o gráficos tienen título y fuente.','Una o dos diapositivas tienen exceso de texto, letra pequeña o imágenes sin título o fuente.','Tres o más diapositivas tienen exceso de texto, letra pequeña o imágenes sin título o fuente.','No usa soporte visual, o este no se puede leer.']),
-    crit('p6','Tiempo (15 minutos)',1,'equipo',['Entre 14 y 16 minutos.','Entre 12 y 14 minutos, o entre 16 y 18.','Entre 10 y 12 minutos, o entre 18 y 20.','Menos de 10 o más de 20 minutos.'],{auto:'tiempo',ayuda:'Al detener el cronómetro, la agenda marca el nivel que corresponde. Puedes cambiarlo.'}),
+    crit('p6','Tiempo (15 minutos)',1,'equipo',textosTiempo(15).desc,{auto:'tiempo',ayuda:'Al detener el cronómetro, la agenda marca el nivel que corresponde. Puedes cambiarlo.'}),
     crit('p7','Respuesta a preguntas',1,'equipo',['Responde correctamente las dos preguntas y fundamenta con contenidos de la exposición.','Responde correctamente las dos preguntas, pero fundamenta solo una.','Responde correctamente solo una pregunta.','No responde correctamente ninguna pregunta.'],{ayuda:'Haz dos preguntas al equipo al terminar la exposición.'}),
     crit('p8','Dominio de su parte',2,'individual',['Explica su parte sin leer y sin errores conceptuales.','Consulta sus apuntes o la diapositiva ocasionalmente, o comete un error conceptual menor.','Lee gran parte de su intervención, o comete dos errores conceptuales.','Lee toda su intervención, comete tres o más errores conceptuales, o no expone.']),
     crit('p9','Expresión oral',1,'individual',['Se escucha claramente desde el fondo de la sala, con ritmo pausado y 3 muletillas o menos.','Se escucha claramente, pero acelera el ritmo o usa entre 4 y 6 muletillas.','Se escucha con dificultad en varios momentos, o usa más de 6 muletillas.','No se escucha la mayor parte del tiempo.']),
@@ -170,6 +178,9 @@ function prepRubrica(r){
   if(!Array.isArray(r.niveles)||!r.niveles.length)r.niveles=clonar(NIVELES4);
   r.criterios=(Array.isArray(r.criterios)?r.criterios:[]).map(function(k){k.id=k.id||uid();k.peso=+k.peso||1;k.alcance=k.alcance==='individual'?'individual':'equipo';k.descriptores=Array.isArray(k.descriptores)?k.descriptores:[];k.ayuda=k.ayuda==='Criterio propio de este OA: cámbialo al usar la rúbrica en otra unidad.'?AYUDA_C1:(k.ayuda||'');k.auto=k.auto||null;return k;});
   r.exigencia=+r.exigencia||0.6;
+  /* v17: los textos automáticos de antes («Entre 14 y 16 minutos.») pasan a los tramos que no se tocan. Un texto escrito a mano no cambia. */
+  if(r.niveles.length===4)r.criterios.forEach(function(k){var x=/^Tiempo \((\d+) minutos?\)$/.exec(k.nombre||'');if(!x)return;var v=textosTiempo1(+x[1]);
+    if(v.desc.every(function(t,i){return k.descriptores[i]===t;}))k.descriptores=textosTiempo(+x[1]).desc.slice();});
 }
 function prepDis(d){
   d.equipos=Array.isArray(d.equipos)?d.equipos:[];
