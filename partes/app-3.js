@@ -118,6 +118,7 @@ function maxNivel(r){var m=0;(r.niveles||[]).forEach(function(n){var p=+n.puntos
 function critEq(r){return r.criterios.filter(function(k){return k.alcance!=='individual';});}
 function critInd(r){return r.criterios.filter(function(k){return k.alcance==='individual';});}
 /* Cuánto vale un criterio, como en una prueba: su puntaje máximo («vale 8 pts»). «× 2» y «vale doble» no se entendían. */
+function ptsTxt(n){return num(n)+(n===1?' pt':' pts');}
 function valeTxt(r,k){var m=maxNivel(r)*(+k.peso||1);return 'vale '+num(m)+(m===1?' pt':' pts');}
 function ptsCrit(r,k,li){var nv=r.niveles[li];return nv?(+nv.puntos||0)*(+k.peso||1):0;}
 function maxDe(r,ks){var m=maxNivel(r);return ks.reduce(function(s,k){return s+m*(+k.peso||1);},0);}
@@ -219,4 +220,4 @@ function vDisEvaluar(d){
   if(ke.length)h+='<h3 class="titulo-sec">Criterios del equipo</h3><ol class="criterios">'+ke.map(function(k){var sel=ev&&ev.grupo?ev.grupo[k.id]:undefined;var n=r.criterios.indexOf(k)+1;
     return '<li class="criterio"><h4><span class="c-num">C'+n+'</span>'+esc(k.nombre||'Criterio sin nombre')+'<span class="peso">'+valeTxt(r,k)+'</span>'+'</h4>'+(k.ayuda?'<p class="ayuda">'+esc(k.ayuda)+'</p>':'')+
       '<div class="niveles" style="--n:'+r.niveles.length+'">'+r.niveles.map(function(lv,li){var sug=ev&&ev.sugerido&&ev.sugerido.c===k.id&&ev.sugerido.li===li;
-        return '<button type="button" class="nivel" data-a="d-niv" data-c="'+esc(k.id)+'" data-l="'+li+'" aria-pressed="'+(sel===li)+'"><span class="n-cab"><b>'+esc(lv.nombre)+'</b><span>'+num(ptsCrit(r,k,li))+' pts</span></span>'+(k.descriptores[li]?'<span class="n-desc">'+esc(k.descriptores[li])+'</span>':'')+(sug?'<span class="n-sug">Según el cronómetro</span>':'')+'</button>';}).join('')+'</div></li>';}).join('')+'</ol>';
+        return '<button type="button" class="nivel" data-a="d-niv" data-c="'+esc(k.id)+'" data-l="'+li+'" aria-pressed="'+(sel===li)+'"><span class="n-cab"><b>'+esc(lv.nombre)+'</b><span>'+ptsTxt(ptsCrit(r,k,li))+'</span></span>'+(k.descriptores[li]?'<span class="n-desc">'+esc(k.descriptores[li])+'</span>':'')+(sug?'<span class="n-sug">Según el cronómetro</span>':'')+'</button>';}).join('')+'</div></li>';}).join('')+'</ol>';
