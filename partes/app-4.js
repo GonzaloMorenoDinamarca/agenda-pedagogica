@@ -4,7 +4,7 @@
     h+='<div class="asist-chips">'+ints.map(function(e){var a=!!(ev&&ev.ausentes&&ev.ausentes[e.id]);return '<button type="button" class="btn chico" data-a="d-ausente" data-id="'+esc(e.id)+'" aria-pressed="'+a+'">'+esc(nombreCorto(e))+': '+(a?'Ausente':'Presente')+'</button>';}).join('')+'</div>';
     ki.forEach(function(k){var n=r.criterios.indexOf(k)+1;
       h+='<div class="criterio"><h4><span class="c-num">C'+n+'</span>'+esc(k.nombre||'Criterio sin nombre')+'<span class="peso">'+valeTxt(r,k)+'</span>'+'</h4>'+
-        '<details class="desc"><summary>Ver descriptores</summary><ul>'+r.niveles.map(function(lv,li){return '<li><b>'+esc(lv.nombre)+' ('+num(ptsCrit(r,k,li))+' pts):</b> '+esc(k.descriptores[li]||'')+'</li>';}).join('')+'</ul></details>';
+        '<details class="desc"><summary>Ver descriptores</summary><ul>'+r.niveles.map(function(lv,li){return '<li><b>'+esc(lv.nombre)+' ('+ptsTxt(ptsCrit(r,k,li))+'):</b> '+esc(k.descriptores[li]||'')+'</li>';}).join('')+'</ul></details>';
       pres.forEach(function(e){var sel=((ev&&ev.ind&&ev.ind[e.id])||{})[k.id];
         h+='<div class="ind-fila"><span class="nom">'+esc(nombreCorto(e))+'</span><div class="ind-niv" style="--n:'+r.niveles.length+'">'+r.niveles.map(function(lv,li){return '<button type="button" class="nivel" data-a="d-ind" data-c="'+esc(k.id)+'" data-id="'+esc(e.id)+'" data-l="'+li+'" aria-pressed="'+(sel===li)+'" aria-label="'+esc(nombreCorto(e)+': '+lv.nombre)+'"><span class="n-cab"><b>'+esc(lv.nombre)+'</b><span>'+num(ptsCrit(r,k,li))+'</span></span></button>';}).join('')+'</div></div>';});
       h+='</div>';});
@@ -57,7 +57,7 @@ function vRubricaVer(id){
   var r=S.rubricas[id];if(!r){ui.rVer=null;return vRubricas();}
   function fila(k){var n=r.criterios.indexOf(k)+1;
     return '<li class="criterio"><h4><span class="c-num">C'+n+'</span>'+esc(k.nombre||'Criterio sin nombre')+'<span class="peso">'+valeTxt(r,k)+'</span>'+'</h4>'+(k.ayuda?'<p class="ayuda">'+esc(k.ayuda)+'</p>':'')+
-      '<div class="niveles" style="--n:'+r.niveles.length+'">'+r.niveles.map(function(lv,li){return '<div class="nivel nivel-ver"><span class="n-cab"><b>'+esc(lv.nombre)+'</b><span>'+num(ptsCrit(r,k,li))+' pts</span></span>'+(k.descriptores[li]?'<span class="n-desc">'+esc(k.descriptores[li])+'</span>':'')+'</div>';}).join('')+'</div></li>';}
+      '<div class="niveles" style="--n:'+r.niveles.length+'">'+r.niveles.map(function(lv,li){return '<div class="nivel nivel-ver"><span class="n-cab"><b>'+esc(lv.nombre)+'</b><span>'+ptsTxt(ptsCrit(r,k,li))+'</span></span>'+(k.descriptores[li]?'<span class="n-desc">'+esc(k.descriptores[li])+'</span>':'')+'</div>';}).join('')+'</div></li>';}
   var ke=critEq(r),ki=critInd(r);
   var h='<section class="seccion"><button type="button" class="btn quiet volver" data-a="r-ver-cerrar">← Rúbricas</button>'+
     '<div class="det-cab"><div><p class="eyebrow">Rúbrica</p><h2>'+esc(r.nombre||'Sin nombre')+'</h2>'+(r.objetivo?'<p class="proyecto">'+esc(r.objetivo)+'</p>':'')+'</div></div>'+
@@ -71,7 +71,7 @@ function vRubricaVer(id){
 function vNuevaRub(){
   return '<section class="seccion"><button type="button" class="btn quiet volver" data-a="d-ver" data-v="rubricas">← Rúbricas</button><h2 class="titulo-sec">Nueva rúbrica</h2><div class="opciones">'+
     '<button type="button" class="opcion" data-a="r-tpl" data-v="propuesta"><b>Disertación científica (propuesta mejorada)</b><span>10 criterios con indicadores observables: 7 del equipo y 3 individuales, con ponderación y cronómetro.</span></button>'+
-    '<button type="button" class="opcion" data-a="r-tpl" data-v="general"><b>Disertación científica (cualquier tema)</b><span>La misma propuesta mejorada, con un C1 general que sirve para cualquier unidad sin escribir nada.</span></button>'+
+    '<button type="button" class="opcion" data-a="r-tpl" data-v="general"><b>Disertación científica (cualquier tema)</b><span>Sirve para cualquier tema de ciencias sin editarla: C1 cuenta los conceptos clave que entregas al asignar el tema, y cada nivel se decide contando.</span></button>'+
     '<button type="button" class="opcion" data-a="r-tpl" data-v="original"><b>Exposición oral (tu rúbrica original)</b><span>8 categorías, 4 niveles, 32 puntos y exigencia de 60 %.</span></button>'+
     '<button type="button" class="opcion" data-a="r-tpl" data-v="blanco"><b>Empezar en blanco</b><span>Cuatro niveles listos (4 a 1 punto) para escribir tus criterios.</span></button></div></section>';
 }
