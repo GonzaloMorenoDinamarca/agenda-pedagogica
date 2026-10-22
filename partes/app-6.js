@@ -11,7 +11,7 @@
   'imp-clases':function(){var l=logsFiltrados();if(!l.length){flash('No hay registros con estos filtros.');render();return;}
     imprimir('Registro de clases',pl(l.length,'registro','registros'),'<table><thead><tr><th>Fecha</th><th>Curso</th><th>Contenido de la clase</th></tr></thead><tbody>'+l.map(function(x){return '<tr><td>'+esc(fLarga(x.d))+(x.l.destacado?'<br>★ destacado':'')+'</td><td>'+esc(nombreGrupo(x.g))+'</td><td>'+(x.l.objetivo?'<b>Objetivo:</b> '+esc(x.l.objetivo)+'<br>':'')+(x.l.temas?'<b>Temas:</b> '+esc(x.l.temas)+'<br>':'')+(x.l.obs?'<b>Obs.:</b> '+esc(x.l.obs)+'<br>':'')+(x.l.tarea?'<b>Pendiente:</b> '+esc(x.l.tarea):'')+'</td></tr>';}).join('')+'</tbody></table>');},
   /* Disertaciones */
-  'd-nueva':function(el){var g=grupoActual();var pre=el&&el.dataset?el.dataset.r:null;var rid=pre&&S.rubricas[pre]?pre:S.rubricas['expo-original']?'expo-original':Object.keys(S.rubricas)[0];ui.rVer=null;ui.dForm={titulo:'',grupoId:g?g.id:'',rubricaId:rid||'',fecha:hoyISO()};ui.formError=null;ui.dVista='nueva';irA('disertaciones');foco('dn-tit');},
+  'd-nueva':function(el){var g=grupoActual();var pre=el&&el.dataset?el.dataset.r:null;var rid=pre&&S.rubricas[pre]?pre:S.rubricas['expo-general']?'expo-general':S.rubricas['expo-original']?'expo-original':Object.keys(S.rubricas)[0];ui.rVer=null;ui.dForm={titulo:'',grupoId:g?g.id:'',rubricaId:rid||'',fecha:hoyISO()};ui.formError=null;ui.dVista='nueva';irA('disertaciones');foco('dn-tit');},
   'd-ver':function(el){ui.rVer=null;if(el.dataset.id){if(el.dataset.id!==ui.dId){ui.dEq=0;crono.acumulado=0;crono.eqId=null;}ui.dId=el.dataset.id;}if(crono.inicio&&el.dataset.v!=='evaluar')detenerCrono(true);ui.dVista=el.dataset.v;ui.formError=null;render();window.scrollTo(0,0);},
   'd-borrar':function(){var d=disActual();if(!d)return;var id=ui.dId;conDeshacer('Se eliminó la disertación «'+(d.titulo||'sin título')+'».',function(){delete S.disertaciones[id];});ui.dId=null;ui.dVista='lista';render();window.scrollTo(0,0);},
   'd-eq-nuevo':function(){var d=disActual();var eq={id:uid(),nombre:'Equipo '+(d.equipos.length+1),tema:'',integrantes:[]};d.equipos.push(eq);ui.dEqActivo=eq.id;guardar();render();},
@@ -226,11 +226,18 @@ function revisarDia(){var h=hoyISO();if(h===diaVisto)return false;if(ui.fecha===
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')revisarDia();});
 window.addEventListener('pageshow',revisarDia);
 
+/* v18: el profesor eligió «Disertación científica (cualquier tema)». La «propuesta mejorada» de base se quita si ninguna
+   disertación la usa; si alguna la usa, queda para no dejarla sin rúbrica, y se vuelve a revisar al abrir. */
+function quitarPropuesta(s){if(s.meta.sinPropuesta)return;
+  if(s.rubricas['expo-propuesta']){if(Object.keys(s.disertaciones).some(function(k){return s.disertaciones[k].rubricaId==='expo-propuesta';}))return;delete s.rubricas['expo-propuesta'];}
+  s.meta.sinPropuesta=1;}
+
 /* =================== Inicio =================== */
 leerGuardado().then(function(raw){
   var nuevo=false;
   if(raw){try{S=normalizar(JSON.parse(raw));}catch(e){S=null;try{localStorage.setItem(LS_DATOS+':danado-'+Date.now(),raw);}catch(x){}}}
   if(!S){S=vacio();semilla(S);nuevo=true;}
+  quitarPropuesta(S);
   cargarUI();
   var h=(location.hash||'').slice(1);if(['hoy','asistencia','notas','clases','disertaciones','bitacora','respaldo'].indexOf(h)>=0)ui.tab=h;
   render();
