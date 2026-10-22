@@ -70,7 +70,6 @@ function vRubricaVer(id){
 }
 function vNuevaRub(){
   return '<section class="seccion"><button type="button" class="btn quiet volver" data-a="d-ver" data-v="rubricas">← Rúbricas</button><h2 class="titulo-sec">Nueva rúbrica</h2><div class="opciones">'+
-    '<button type="button" class="opcion" data-a="r-tpl" data-v="propuesta"><b>Disertación científica (propuesta mejorada)</b><span>10 criterios con indicadores observables: 7 del equipo y 3 individuales, con ponderación y cronómetro.</span></button>'+
     '<button type="button" class="opcion" data-a="r-tpl" data-v="general"><b>Disertación científica (cualquier tema)</b><span>Sirve para cualquier tema de ciencias sin editarla: C1 cuenta los conceptos clave que entregas al asignar el tema, y cada nivel se decide contando.</span></button>'+
     '<button type="button" class="opcion" data-a="r-tpl" data-v="original"><b>Exposición oral (tu rúbrica original)</b><span>8 categorías, 4 niveles, 32 puntos y exigencia de 60 %.</span></button>'+
     '<button type="button" class="opcion" data-a="r-tpl" data-v="blanco"><b>Empezar en blanco</b><span>Cuatro niveles listos (4 a 1 punto) para escribir tus criterios.</span></button></div></section>';
