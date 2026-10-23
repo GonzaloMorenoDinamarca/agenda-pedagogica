@@ -5,7 +5,7 @@
   'c-pag':function(el){ui.cPag=Math.max(0,ui.cPag+(+el.dataset.v));render();window.scrollTo(0,0);},
   'c-nuevo':function(){ui.cNuevo={g:ui.cGrupo||(grupoActual()||{}).id,d:hoyISO()};render();},
   'c-nuevo-cancelar':function(){ui.cNuevo=null;render();},
-  'c-editar':function(el){ui.cEdit=el.dataset.g+'|'+el.dataset.d;render();foco('lg-obj');},
+  'c-editar':function(el){ui.confLog=null;ui.cEdit=el.dataset.g+'|'+el.dataset.d;render();foco('lg-obj');},
   'c-destacar':function(el){var g=grupoPorId(el.dataset.g),l=g&&g.classLogs[el.dataset.d];if(!l)return;l.destacado=!l.destacado;guardar();render();},
   'c-ir':function(el){ui.grupoId=el.dataset.g;ui.fecha=el.dataset.d;ui.aVista='lista';ui.ficha=null;irA('asistencia');},
   'imp-clases':function(){var l=logsFiltrados();if(!l.length){flash('No hay registros con estos filtros.');render();return;}
@@ -200,8 +200,8 @@ document.addEventListener('change',function(e){
     return;}
   var s=el.dataset&&el.dataset.sel;if(!s)return;var v2=el.value;
   switch(s){
-    case 'grupo':ui.grupoId=v2;ui.ficha=null;ui.regAbierto=false;ui.cursoDatos=null;ui.nuevoEst=null;ui.pegarCurso='';render();break;
-    case 'fecha':if(v2){ui.fecha=v2;ui.regAbierto=false;render();}break;
+    case 'grupo':ui.confLog=null;ui.grupoId=v2;ui.ficha=null;ui.regAbierto=false;ui.cursoDatos=null;ui.nuevoEst=null;ui.pegarCurso='';render();break;
+    case 'fecha':if(v2){ui.confLog=null;ui.fecha=v2;ui.regAbierto=false;render();}break;
     case 'ir-lista':if(v2){ui.grupoId=v2;ui.fecha=hoyISO();ui.aVista='lista';irA('asistencia');}break;
     case 'notas':ui.nSel=v2;ui.evalForm=null;ui.renombrar=null;if(v2.indexOf('g:')===0)ui.grupoId=v2.slice(2);render();break;
     case 'ncurso':ui.nCurso=v2;render();break;
