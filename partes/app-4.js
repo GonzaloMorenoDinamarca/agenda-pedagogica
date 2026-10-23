@@ -136,10 +136,16 @@ function vDetalleEq(eqs){
   regs.slice(ui.entryPage*POR_PAGINA,(ui.entryPage+1)*POR_PAGINA).forEach(function(r){
     h+='<article class="registro"><header><time datetime="'+esc(r.fecha)+'">'+esc(fLarga(r.fecha))+'</time><span class="reg-tags">'+(r.etapa?esc(r.etapa):'')+(r.etapa&&r.estado?' · ':'')+chipEstado(r.estado)+'</span></header><dl class="campos">'+
       (r.avance?'<dt>Avance</dt><dd>'+esc(r.avance)+'</dd>':'')+(r.proximos?'<dt>Próximos pasos</dt><dd>'+esc(r.proximos)+'</dd>':'')+(r.apoyo?'<dt>Apoyo que necesitan</dt><dd>'+esc(r.apoyo)+'</dd>':'')+
-      '</dl><div class="acciones"><button type="button" class="btn quiet" data-a="entry-edit" data-id="'+esc(r.id)+'">Editar</button><button type="button" class="btn quiet" data-a="entry-del" data-id="'+esc(r.id)+'">Eliminar</button></div></article>';});
+      '</dl>'+(ui.confEntry===r.id?vConfEntry(t,r):'<div class="acciones"><button type="button" class="btn quiet" data-a="entry-edit" data-id="'+esc(r.id)+'">Editar</button><button type="button" class="btn quiet" data-a="entry-del" data-id="'+esc(r.id)+'">Eliminar</button></div>')+'</article>';});
   if(pags>1)h+='<div class="paginador"><button type="button" class="btn" data-a="pag-prev"'+(ui.entryPage===0?' disabled':'')+'>← Más recientes</button><span>Página '+(ui.entryPage+1)+' de '+pags+'</span><button type="button" class="btn" data-a="pag-next"'+(ui.entryPage>=pags-1?' disabled':'')+'>Más antiguos →</button></div>';
   return h+'</div>';
 }
+/* Eliminar un registro de la bitácora pide confirmar, con lo que se perdería. El último registro queda al final de la página:
+   el espacio bajo el aviso deja subirlo entero a la vista, así «Sí» no cae donde estaba el dedo. */
+function vConfEntry(t,r){var p=[];if(r.avance)p.push('el avance');if(r.proximos)p.push('los próximos pasos');if(r.apoyo)p.push('el apoyo que necesitan');
+  var lista=p.length>1?p.slice(0,-1).join(', ')+' y '+p[p.length-1]:(p[0]||'el registro');
+  return '<div class="form" id="conf-entry" role="alert" style="border-width:3px;margin-bottom:75vh"><p><b>¿Eliminar el registro del '+esc(fLarga(r.fecha))+' de '+esc(t.nombre||'este equipo')+'?</b> Se borra lo anotado: '+esc(lista)+'.</p>'+
+    '<div class="acciones"><button type="button" class="btn primary" data-a="entry-del-si" data-id="'+esc(r.id)+'">Sí, eliminar el registro</button><button type="button" class="btn" data-a="entry-del-no">Cancelar</button></div></div>';}
 function vFormRegistro(){
   var d=ui.entryDraft,ed=!!ui.editingEntry;
   return '<form class="form" id="form-registro" data-form="entry"><h3>'+(ed?'Editar registro':'Nuevo registro')+'</h3>'+vError()+
