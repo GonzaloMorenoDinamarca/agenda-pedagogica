@@ -2,7 +2,7 @@
    Todo sale del caché que se llenó al instalar, también la página: abre al instante y no usa la red ni la batería en buscarla.
    Así las partes de la app nunca se mezclan entre versiones. El navegador revisa solo este archivo para saber si hay versión nueva:
    para publicar cambios, cambia CACHE y todo se descarga de nuevo junto. */
-var CACHE = 'agenda-v18';
+var CACHE = 'agenda-v19';
 var PROPIOS = ['./', './index.html', './app.js', './estilos.css', './manifest.webmanifest', './icono.svg', './icono-maskable.svg',
   './partes/app-1.js', './partes/app-2.js', './partes/app-3.js', './partes/app-4.js', './partes/app-5.js', './partes/app-6.js'];
 var EXTERNOS = [
