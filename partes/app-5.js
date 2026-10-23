@@ -196,13 +196,13 @@ function traerDeCuenta(email,pass){
 /* =================== Acciones =================== */
 var A={
   /* Al cambiar de pestaña, el aviso de la anterior se va (era de esa pantalla); «Deshacer» sigue disponible. */
-  'tab':function(el){if(el.dataset.v!=='asistencia')ui.ficha=null;ui.confBorrar=null;ui.confCurso=null;ui.regAbierto=false;ui.msg=null;irA(el.dataset.v);},
-  'vista':function(el){ui[el.dataset.k]=el.dataset.v;ui.formError=null;ui.confCurso=null;ui.regAbierto=false;render();arriba();},
+  'tab':function(el){if(el.dataset.v!=='asistencia')ui.ficha=null;ui.confBorrar=null;ui.confCurso=null;ui.confLog=null;ui.regAbierto=false;ui.msg=null;irA(el.dataset.v);},
+  'vista':function(el){ui[el.dataset.k]=el.dataset.v;ui.formError=null;ui.confCurso=null;ui.confLog=null;ui.regAbierto=false;render();arriba();},
   'deshacer':function(){if(!ui.undo)return;S=normalizar(JSON.parse(ui.undo.snap));ui.undo=null;persistir();flash('Se deshizo el cambio.');render();},
   'copia-cerrar':function(){ui.copiaManual=null;render();},
   'recargar':function(){persistir();setTimeout(function(){location.reload();},300);},
   /* Hoy */
-  'ir-lista':function(el){ui.grupoId=el.dataset.id;ui.fecha=hoyISO();ui.aVista='lista';ui.ficha=null;ui.regAbierto=false;irA('asistencia');},
+  'ir-lista':function(el){ui.confLog=null;ui.grupoId=el.dataset.id;ui.fecha=hoyISO();ui.aVista='lista';ui.ficha=null;ui.regAbierto=false;irA('asistencia');},
   'ir-stats':function(el){ui.grupoId=el.dataset.id;ui.aVista='stats';ui.ficha=null;irA('asistencia');},
   'ir-cuenta':function(){irA('respaldo');setTimeout(function(){var b=document.getElementById('bloque-cuenta');if(b)b.scrollIntoView();foco('cu-email');},0);},
   'imp-local':function(){var gs=asistenciaLocal();if(!gs)return;var p={tipo:'asistencia',grupos:gs,origen:'Control de Asistencia en esta tableta'};if(!S.grupos.length){aplicarImport(p);irA('hoy');}else{ui.importPend=p;irA('respaldo');}},
@@ -210,8 +210,8 @@ var A={
   'd-abrir':function(el){var d=S.disertaciones[el.dataset.id];if(!d)return;ui.dId=el.dataset.id;var pr=progresoDis(d);ui.dVista=pr.total&&pr.listos===pr.total?'resumen':(pr.total?'evaluar':'config');ui.dEq=0;irA('disertaciones');},
   'b-abrir':function(el){ui.teamId=el.dataset.id;ui.teamMode='ver';irA('bitacora');},
   /* Asistencia */
-  'fecha-mover':function(el){ui.fecha=sumarDias(ui.fecha,+el.dataset.v);ui.regAbierto=false;render();},
-  'fecha-hoy':function(){ui.fecha=hoyISO();ui.regAbierto=false;render();},
+  'fecha-mover':function(el){ui.confLog=null;ui.fecha=sumarDias(ui.fecha,+el.dataset.v);ui.regAbierto=false;render();},
+  'fecha-hoy':function(){ui.confLog=null;ui.fecha=hoyISO();ui.regAbierto=false;render();},
   'marcar':function(el){var g=grupoActual();if(!g)return;var sid=el.dataset.id;setAtt(g,ui.fecha,sid,el.dataset.v);var st=(g.asistencia[ui.fecha]||{})[sid]||null;
     var grp=el.closest('.pat');if(grp)grp.querySelectorAll('button').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.v===st));});
     var c=document.getElementById('conteo');if(c)c.innerHTML=vConteo(g);},
@@ -221,9 +221,11 @@ var A={
   'ficha-obs':function(el){ui.ficha=el.dataset.id;ui.estDraft=null;ui.confBorrar=null;ui.formError=null;render();window.scrollTo(0,0);foco('obs-txt');},
   'ficha-cerrar':function(){ui.ficha=null;ui.estDraft=null;ui.confBorrar=null;ui.formError=null;render();},
   'obs-borrar':function(el){var g=grupoActual();var sid=el.dataset.id;conDeshacer('Observación borrada.',function(){if(g.notas[ui.fecha]){delete g.notas[ui.fecha][sid];if(!Object.keys(g.notas[ui.fecha]).length)delete g.notas[ui.fecha];}});render();},
-  'reg-abrir':function(){ui.regAbierto=true;render();arriba('form-log');foco('lg-obj');},
-  'log-listo':function(el){if(el.dataset.ctx==='clases')ui.cEdit=null;else ui.regAbierto=false;flash('Registro de clase guardado.');render();},
-  'log-borrar':function(el){var g=grupoPorId(el.dataset.g),d=el.dataset.d;if(!g)return;conDeshacer('Registro de clase borrado.',function(){delete g.classLogs[d];});ui.regAbierto=false;ui.cEdit=null;render();},
+  'reg-abrir':function(){ui.confLog=null;ui.regAbierto=true;render();arriba('form-log');foco('lg-obj');},
+  'log-listo':function(el){ui.confLog=null;if(el.dataset.ctx==='clases')ui.cEdit=null;else ui.regAbierto=false;flash('Registro de clase guardado.');render();},
+  'log-borrar':function(el){var g=grupoPorId(el.dataset.g),d=el.dataset.d;if(!g||!g.classLogs[d])return;ui.confLog=g.id+'|'+d;render();arriba('conf-log');},
+  'log-borrar-no':function(){ui.confLog=null;render();},
+  'log-borrar-si':function(el){var g=grupoPorId(el.dataset.g),d=el.dataset.d;ui.confLog=null;if(!g)return;conDeshacer('Registro de clase borrado.',function(){delete g.classLogs[d];});ui.regAbierto=false;ui.cEdit=null;render();},
   'est-borrar':function(el){ui.confBorrar=el.dataset.id;render();arriba('conf-est');},
   'est-borrar-no':function(){ui.confBorrar=null;render();},
   'est-borrar-si':function(el){var g=grupoActual(),sid=el.dataset.id,e=estPorId(g,sid);ui.confBorrar=null;if(!e)return;
