@@ -106,8 +106,16 @@ function vFormLog(g,f,ctx){
     '<div class="campo"><label for="lg-obs">Observaciones generales</label><textarea id="lg-obs" rows="2" data-f="log.obs"'+at+'>'+esc(l.obs||'')+'</textarea></div>'+
     '<div class="campo"><label for="lg-tar">Pendiente para la próxima clase</label><textarea id="lg-tar" rows="2" data-f="log.tarea"'+at+'>'+esc(l.tarea||'')+'</textarea></div>'+
     '<label class="campo-check" for="lg-dest"><input type="checkbox" id="lg-dest" data-f="log.destacado"'+at+(l.destacado?' checked':'')+'> Destacar este registro</label>'+
-    '<p class="ayuda">Se guarda mientras escribes.</p><div class="acciones"><button type="button" class="btn primary" data-a="log-listo" data-ctx="'+ctx+'">Listo</button>'+
-    (g.classLogs[f]?'<button type="button" class="btn quiet" data-a="log-borrar"'+at+'>Borrar registro</button>':'')+'</div></div>';
+    '<p class="ayuda">Se guarda mientras escribes.</p>'+(ui.confLog===g.id+'|'+f&&g.classLogs[f]?vConfLog(g,f,l):'<div class="acciones"><button type="button" class="btn primary" data-a="log-listo" data-ctx="'+ctx+'">Listo</button>'+
+    (g.classLogs[f]?'<button type="button" class="btn quiet" data-a="log-borrar"'+at+'>Borrar registro</button>':'')+'</div>')+'</div>';
+}
+/* Borrar el registro de una clase pide confirmar, con lo que se perdería a la vista. Como con un estudiante o un curso:
+   el aviso sube entero a la vista y «Sí, borrar el registro» no cae donde estaba el dedo. */
+function vConfLog(g,f,l){
+  var p=[];if(l.objetivo)p.push('el objetivo');if(l.temas)p.push('los temas');if(l.obs)p.push('las observaciones');if(l.tarea)p.push('el pendiente');if(l.destacado)p.push('la marca de destacado');
+  var lista=p.length>1?p.slice(0,-1).join(', ')+' y '+p[p.length-1]:(p[0]||'');
+  return '<div class="form" id="conf-log" role="alert" style="border-width:3px"><p><b>¿Borrar el registro de la clase del '+esc(fLarga(f))+'?</b> Se borra '+esc(lista)+'.</p>'+
+    '<div class="acciones"><button type="button" class="btn primary" data-a="log-borrar-si" data-g="'+esc(g.id)+'" data-d="'+esc(f)+'">Sí, borrar el registro</button><button type="button" class="btn" data-a="log-borrar-no">Cancelar</button></div></div>';
 }
 function vRegClase(g,f){
   if(ui.regAbierto)return vFormLog(g,f,'lista');
