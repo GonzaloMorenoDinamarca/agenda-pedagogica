@@ -196,7 +196,7 @@ function traerDeCuenta(email,pass){
 /* =================== Acciones =================== */
 var A={
   /* Al cambiar de pestaña, el aviso de la anterior se va (era de esa pantalla); «Deshacer» sigue disponible. */
-  'tab':function(el){if(el.dataset.v!=='asistencia')ui.ficha=null;ui.confBorrar=null;ui.confCurso=null;ui.confLog=null;ui.regAbierto=false;ui.msg=null;irA(el.dataset.v);},
+  'tab':function(el){if(el.dataset.v!=='asistencia')ui.ficha=null;ui.confBorrar=null;ui.confCurso=null;ui.confLog=null;ui.confObs=null;ui.confEntry=null;ui.regAbierto=false;ui.msg=null;irA(el.dataset.v);},
   'vista':function(el){ui[el.dataset.k]=el.dataset.v;ui.formError=null;ui.confCurso=null;ui.confLog=null;ui.regAbierto=false;render();arriba();},
   'deshacer':function(){if(!ui.undo)return;S=normalizar(JSON.parse(ui.undo.snap));ui.undo=null;persistir();flash('Se deshizo el cambio.');render();},
   'copia-cerrar':function(){ui.copiaManual=null;render();},
@@ -217,10 +217,12 @@ var A={
     var c=document.getElementById('conteo');if(c)c.innerHTML=vConteo(g);},
   'todos-presentes':function(){var g=grupoActual();if(!g)return;if(!g.asistencia[ui.fecha])g.asistencia[ui.fecha]={};var n=0;g.estudiantes.forEach(function(e){if(!retEn(e,ui.fecha)&&!g.asistencia[ui.fecha][e.id]){g.asistencia[ui.fecha][e.id]='present';n++;}});guardar();flash(pl(n,'estudiante marcado como presente','estudiantes marcados como presentes')+'. Toca P de nuevo para quitar a alguien.');render();},
   'orden':function(el){ui.soloApellido=el.dataset.v==='apellido';render();},
-  'ficha':function(el){ui.ficha=el.dataset.id;ui.estDraft=null;ui.confBorrar=null;ui.formError=null;if(ui.tab!=='asistencia')ui.tab='asistencia';render();window.scrollTo(0,0);},
-  'ficha-obs':function(el){ui.ficha=el.dataset.id;ui.estDraft=null;ui.confBorrar=null;ui.formError=null;render();window.scrollTo(0,0);foco('obs-txt');},
-  'ficha-cerrar':function(){ui.ficha=null;ui.estDraft=null;ui.confBorrar=null;ui.formError=null;render();},
-  'obs-borrar':function(el){var g=grupoActual();var sid=el.dataset.id;conDeshacer('Observación borrada.',function(){if(g.notas[ui.fecha]){delete g.notas[ui.fecha][sid];if(!Object.keys(g.notas[ui.fecha]).length)delete g.notas[ui.fecha];}});render();},
+  'ficha':function(el){ui.ficha=el.dataset.id;ui.estDraft=null;ui.confBorrar=null;ui.confObs=null;ui.formError=null;if(ui.tab!=='asistencia')ui.tab='asistencia';render();window.scrollTo(0,0);},
+  'ficha-obs':function(el){ui.ficha=el.dataset.id;ui.estDraft=null;ui.confBorrar=null;ui.confObs=null;ui.formError=null;render();window.scrollTo(0,0);foco('obs-txt');},
+  'ficha-cerrar':function(){ui.ficha=null;ui.estDraft=null;ui.confBorrar=null;ui.confObs=null;ui.formError=null;render();},
+  'obs-borrar':function(el){ui.confObs=el.dataset.id+'|'+ui.fecha;render();arriba('conf-obs');},
+  'obs-borrar-no':function(){ui.confObs=null;render();},
+  'obs-borrar-si':function(el){var g=grupoActual();var sid=el.dataset.id;ui.confObs=null;conDeshacer('Observación borrada.',function(){if(g.notas[ui.fecha]){delete g.notas[ui.fecha][sid];if(!Object.keys(g.notas[ui.fecha]).length)delete g.notas[ui.fecha];}});render();},
   'reg-abrir':function(){ui.confLog=null;ui.regAbierto=true;render();arriba('form-log');foco('lg-obj');},
   'log-listo':function(el){ui.confLog=null;if(el.dataset.ctx==='clases')ui.cEdit=null;else ui.regAbierto=false;flash('Registro de clase guardado.');render();},
   'log-borrar':function(el){var g=grupoPorId(el.dataset.g),d=el.dataset.d;if(!g||!g.classLogs[d])return;ui.confLog=g.id+'|'+d;render();arriba('conf-log');},
