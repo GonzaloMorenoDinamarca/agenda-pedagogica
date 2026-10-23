@@ -159,7 +159,7 @@ function vFicha(g,e){
   var d=ui.estDraft;
   var h='<section class="seccion"><button type="button" class="btn quiet volver" data-a="ficha-cerrar">← Volver a la lista</button>';
   h+='<div class="ficha-cab"><p class="eyebrow">'+esc(nombreGrupo(g))+' · '+esc(e.c||'Sin curso')+'</p><h2>'+esc(nombreCompleto(e))+'</h2>'+(e.ret?'<p><span class="chip">Retirado de la asignatura desde el '+esc(fCorta(e.ret))+'</span></p>':'')+'</div><div class="dos-col"><div class="seccion">';
-  h+='<div class="panel"><h3>Observación del '+esc(fLarga(f))+'</h3><textarea id="obs-txt" rows="4" data-f="obs" data-id="'+esc(e.id)+'" placeholder="Escribe una observación sobre el estudiante">'+esc(obs)+'</textarea><p class="ayuda">Se guarda mientras escribes. Para anotar en otro día, cambia la fecha en la lista.</p>'+(obs?'<div class="acciones"><button type="button" class="btn quiet" data-a="obs-borrar" data-id="'+esc(e.id)+'">Borrar observación</button></div>':'')+'</div>';
+  h+='<div class="panel"><h3>Observación del '+esc(fLarga(f))+'</h3><textarea id="obs-txt" rows="4" data-f="obs" data-id="'+esc(e.id)+'" placeholder="Escribe una observación sobre el estudiante">'+esc(obs)+'</textarea><p class="ayuda">Se guarda mientras escribes. Para anotar en otro día, cambia la fecha en la lista.</p>'+(obs?(ui.confObs===e.id+'|'+f?vConfObs(e,f,obs):'<div class="acciones"><button type="button" class="btn quiet" data-a="obs-borrar" data-id="'+esc(e.id)+'">Borrar observación</button></div>'):'')+'</div>';
   var fs=fechasAsistencia(g).filter(function(x){return g.asistencia[x][e.id];}).reverse().slice(0,10);
   h+='<div class="panel"><h3>Asistencia</h3><div class="acciones"><span>'+esc(fCorta(f))+':</span>'+(retEn(e,f)?'<span class="ret-et">Retirado</span>':vPat(e.id,att))+'</div>'+
     (s.r?'<p><b class="'+(enRiesgo(s)?'baja':'')+'">'+s.pct+' %</b> en '+s.r+(s.r===1?' clase registrada':' clases registradas')+' · '+pl(s.p,'presente','presentes')+' · '+pl(s.a,'ausente','ausentes')+' · '+pl(s.l,'atraso','atrasos')+'</p>':'<p class="ayuda">Aún sin clases registradas.</p>')+
@@ -196,6 +196,10 @@ function vConfBorrar(g,e){
     (e.ret?'':'<p class="ayuda">Si se cambió de asignatura, mejor márcalo como retirado: sigue en la lista y conserva todo.</p>')+
     '<div class="acciones"><button type="button" class="btn primary" data-a="est-borrar-si" data-id="'+esc(e.id)+'">Sí, eliminar</button>'+(e.ret?'':'<button type="button" class="btn" data-a="est-retirar" data-id="'+esc(e.id)+'">Marcar como retirado</button>')+'<button type="button" class="btn" data-a="est-borrar-no">Cancelar</button></div></div>';
 }
+/* Borrar una observación pide confirmar, mostrando su comienzo. Como en los demás avisos, «Sí» no cae donde estaba el dedo. */
+function vConfObs(e,f,obs){var t=String(obs).trim();if(t.length>90)t=t.slice(0,90).trim()+'…';
+  return '<div class="form" id="conf-obs" role="alert" style="border-width:3px"><p><b>¿Borrar la observación del '+esc(fLarga(f))+' sobre '+esc(nombreCorto(e))+'?</b> Se borra: «'+esc(t)+'».</p>'+
+    '<div class="acciones"><button type="button" class="btn primary" data-a="obs-borrar-si" data-id="'+esc(e.id)+'">Sí, borrar la observación</button><button type="button" class="btn" data-a="obs-borrar-no">Cancelar</button></div></div>';}
 function grafAsistencia(g,fechas){
   var ult=fechas.slice(-12),W=640,H=230,ml=40,mr=8,mt=18,mb=34,iw=W-ml-mr,ih=H-mt-mb,n=ult.length||1,bw=iw/n;
   function y(v){return mt+ih-(v/100)*ih;}
