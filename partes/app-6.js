@@ -94,12 +94,18 @@ var ENVIOS={
     if(!ap||!n){ui.formError='El apellido paterno y los nombres son obligatorios.';render();return;}
     if(d.otro&&!c){ui.formError='Escribe el nombre del curso.';render();foco('es-co');return;}
     e.ap=ap;e.am=d.am.trim();e.n=n;e.c=c;g.estudiantes.sort(function(a,b){return cmpEst(a,b);});guardar();ui.estDraft=null;ui.formError=null;flash('Datos guardados.');render();},
-  'nuevo-est':function(){var g=grupoActual(),d=ui.nuevoEst,ap=d.ap.trim(),n=d.n.trim(),c=cursoDeDraft(d);
-    if(!ap||!n){flash('Escribe al menos el apellido paterno y los nombres.');render();foco(ap?'ne-n':'ne-ap');return;}
-    if(!c){flash('Elige el curso del estudiante para ordenarlo con sus compañeros.');render();foco('ne-c');return;}
-    agregarEstudiantes(g,[{ap:ap,am:d.am.trim(),n:n,c:c}]);guardar();
-    var pos=ordenarEst(g.estudiantes).map(function(x){return x.ap+'|'+x.n;}).indexOf(ap+'|'+n)+1;
-    ui.nuevoEst={ap:'',am:'',n:'',c:c,otro:false,cOtro:''};flash('Agregado: '+n+' '+ap+' en '+c+' (N° '+pos+' de la lista).');render();foco('ne-ap');},
+  'nuevo-est':function(){var g=grupoActual(),fs=ui.nuevoEst.filas,lista=[],err=null,foc=null;
+    fs.forEach(function(f,i){if(err||filaVacia(f))return;var et=fs.length>1?'Estudiante '+(i+1)+': ':'',ap=f.ap.trim(),n=f.n.trim(),c=cursoDeDraft(f),id=idFila(i);
+      if(!ap||!n){err=et+'escribe al menos el apellido paterno y los nombres.';foc=id+(ap?'-n':'-ap');return;}
+      if(!c){err=et+'elige el curso para ordenarlo con sus compañeros.';foc=id+(f.otro?'-co':'-c');return;}
+      lista.push({ap:ap,am:f.am.trim(),n:n,c:c});});
+    if(!err&&!lista.length){err='Escribe al menos el apellido paterno y los nombres.';foc='ne-ap';}
+    if(err){ui.neError=err;render();foco(foc);return;}
+    agregarEstudiantes(g,lista);guardar();
+    var orden=ordenarEst(g.estudiantes).map(function(x){return x.ap+'|'+x.n;});
+    var txt=lista.map(function(e){return e.n+' '+e.ap+' en '+e.c+' (N° '+(orden.indexOf(e.ap+'|'+e.n)+1)+')';});
+    ui.nuevoEst={filas:[filaNueva()]};ui.neError=null;
+    flash(lista.length===1?'Agregado: '+txt[0].replace(/\)$/,' de la lista).'):'Agregados '+lista.length+' estudiantes: '+txt.join('; ')+'.');render();foco('ne-ap');},
   'curso-datos':function(){var g=grupoActual(),d=ui.cursoDatos;if(!d.asignatura.trim()){ui.formError='Escribe la asignatura.';render();return;}
     g.asignatura=d.asignatura.trim();g.grupo=d.grupo.trim();g.nivel=d.nivel;g.profesor=d.profesor.trim();guardar();ui.cursoDatos=null;ui.formError=null;flash('Datos del curso guardados.');render();},
   'curso-nuevo':function(){var d=ui.cursoForm;if(!d.asignatura.trim()){ui.formError='Escribe la asignatura.';render();foco('cn-asig');return;}
@@ -160,7 +166,7 @@ document.addEventListener('input',function(e){
     case 'log':escribirLog(el);return;
     case 'obs':var g=grupoActual(),sid=el.dataset.id;if(!g.notas[ui.fecha])g.notas[ui.fecha]={};if(v.trim())g.notas[ui.fecha][sid]=v;else{delete g.notas[ui.fecha][sid];if(!Object.keys(g.notas[ui.fecha]).length)delete g.notas[ui.fecha];}guardar();return;
     case 'es':if(ui.estDraft)campoDraft(ui.estDraft,p[1],el);return;
-    case 'ne':if(ui.nuevoEst)campoDraft(ui.nuevoEst,p[1],el);return;
+    case 'ne':var fn=ui.nuevoEst&&ui.nuevoEst.filas&&ui.nuevoEst.filas[+p[1]];if(fn)campoDraft(fn,p[2],el);return;
     case 'cd':if(ui.cursoDatos)ui.cursoDatos[p[1]]=v;return;
     case 'cn':if(ui.cursoForm)ui.cursoForm[p[1]]=v;return;
     case 'pegar':ui.pegar=v;return;
@@ -202,7 +208,7 @@ document.addEventListener('change',function(e){
     return;}
   var s=el.dataset&&el.dataset.sel;if(!s)return;var v2=el.value;
   switch(s){
-    case 'grupo':ui.confLog=null;ui.grupoId=v2;ui.ficha=null;ui.regAbierto=false;ui.cursoDatos=null;ui.nuevoEst=null;ui.pegarCurso='';render();break;
+    case 'grupo':ui.confLog=null;ui.grupoId=v2;ui.ficha=null;ui.regAbierto=false;ui.cursoDatos=null;ui.nuevoEst=null;ui.neError=null;ui.pegarCurso='';render();break;
     case 'fecha':if(v2){ui.confLog=null;ui.fecha=v2;ui.regAbierto=false;render();}break;
     case 'ir-lista':if(v2){ui.grupoId=v2;ui.fecha=hoyISO();ui.aVista='lista';irA('asistencia');}break;
     case 'notas':ui.nSel=v2;ui.evalForm=null;ui.renombrar=null;if(v2.indexOf('g:')===0)ui.grupoId=v2.slice(2);render();break;
