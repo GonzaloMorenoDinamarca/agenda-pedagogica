@@ -196,8 +196,8 @@ function traerDeCuenta(email,pass){
 /* =================== Acciones =================== */
 var A={
   /* Al cambiar de pestaña, el aviso de la anterior se va (era de esa pantalla); «Deshacer» sigue disponible. */
-  'tab':function(el){if(el.dataset.v!=='asistencia')ui.ficha=null;ui.confBorrar=null;ui.confCurso=null;ui.confLog=null;ui.confObs=null;ui.confEntry=null;ui.regAbierto=false;ui.msg=null;irA(el.dataset.v);},
-  'vista':function(el){ui[el.dataset.k]=el.dataset.v;ui.formError=null;ui.confCurso=null;ui.confLog=null;ui.regAbierto=false;render();arriba();},
+  'tab':function(el){if(el.dataset.v!=='asistencia')ui.ficha=null;ui.neError=null;ui.confBorrar=null;ui.confCurso=null;ui.confLog=null;ui.confObs=null;ui.confEntry=null;ui.regAbierto=false;ui.msg=null;irA(el.dataset.v);},
+  'vista':function(el){ui[el.dataset.k]=el.dataset.v;ui.formError=null;ui.neError=null;ui.confCurso=null;ui.confLog=null;ui.regAbierto=false;render();arriba();},
   'deshacer':function(){if(!ui.undo)return;S=normalizar(JSON.parse(ui.undo.snap));ui.undo=null;persistir();flash('Se deshizo el cambio.');render();},
   'copia-cerrar':function(){ui.copiaManual=null;render();},
   'recargar':function(){persistir();setTimeout(function(){location.reload();},300);},
@@ -243,6 +243,8 @@ var A={
     imprimir('Estadísticas de asistencia',nombreGrupo(g),'<p>'+pl(D.fechas.length,'clase','clases')+' · asistencia promedio '+(D.prom!=null?D.prom+' %':'—')+' · '+D.bajo+' bajo 75 %</p><table><thead><tr><th>Estudiante</th><th>Curso</th><th>Asistencia</th><th>P</th><th>A</th><th>T</th><th>Clases</th>'+(hasCal?'<th>Prom. notas</th>':'')+'</tr></thead><tbody>'+
       D.filas.map(function(x){return '<tr><td>'+esc(apellidos(x.e))+', '+esc(x.e.n)+'</td><td>'+esc(x.e.c)+'</td><td>'+x.s.pct+' %</td><td>'+x.s.p+'</td><td>'+x.s.a+'</td><td>'+x.s.l+'</td><td>'+x.s.r+'</td>'+(hasCal?'<td>'+(x.prom!=null?num(x.prom,1):'—')+'</td>':'')+'</tr>';}).join('')+'</tbody></table>');},
   'curso-nuevo':function(){ui.cursoForm={asignatura:'',grupo:'',nivel:'4',lista:''};ui.formError=null;if(S.grupos.length){ui.tab='asistencia';ui.aVista='curso';ui.ficha=null;}render();arriba();foco('cn-asig');},
+  'ne-fila':function(){var ne=ui.nuevoEst;if(!ne||ne.filas.length>=MAX_NUEVOS)return;ne.filas.push(filaNueva());ui.neError=null;render();foco(idFila(ne.filas.length-1)+'-ap');},
+  'ne-quitar':function(el){var ne=ui.nuevoEst,i=+el.dataset.i;if(!ne||ne.filas.length<2)return;ne.filas.splice(i,1);ui.neError=null;render();},
   'cn-cancelar':function(){ui.cursoForm=null;ui.formError=null;render();},
   'curso-borrar':function(){var g=grupoActual();if(!g)return;ui.confCurso=g.id;render();arriba('conf-curso');},
   'curso-borrar-no':function(){ui.confCurso=null;render();},
