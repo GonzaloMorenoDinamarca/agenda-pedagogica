@@ -35,7 +35,7 @@ function vBienvenida(){
     (loc?'<button type="button" class="btn primary" data-a="imp-local">Traer '+loc.length+(loc.length===1?' curso guardado':' cursos guardados')+' en esta tableta</button>':'')+
     '<button type="button" class="btn'+(loc?'':' primary')+'" data-a="ir-cuenta">Desde mi cuenta de Control de Asistencia</button>'+
     '<label class="btn" for="arch-bienv">Desde un archivo de respaldo</label><input type="file" id="arch-bienv" class="oculto" data-file="respaldo" accept=".json,application/json">'+
-    '</div><p class="ayuda">¿Un curso nuevo? <button type="button" class="link" data-a="curso-nuevo">Créalo a mano</button> o <label class="link" for="pdf-bienv">importa la nómina en PDF</label><input type="file" id="pdf-bienv" class="oculto" data-file="pdf" accept=".pdf,application/pdf">.</p></div>';
+    '</div><p class="ayuda">¿Un curso nuevo? <label class="link" for="pdf-bienv">Importa la nómina en PDF</label><input type="file" id="pdf-bienv" class="oculto" data-file="pdf" accept=".pdf,application/pdf">.</p></div>';
 }
 function progresoDis(d){var r=S.rubricas[d.rubricaId];var g=grupoPorId(d.grupoId);if(!r||!g)return {listos:0,total:d.equipos.length};return {listos:d.equipos.filter(function(eq){return equipoListo(d,r,eq);}).length,total:d.equipos.length};}
 function vHoyDis(){
@@ -145,14 +145,31 @@ function vLista(g){
   });
   return h+'<ol class="alumnos">'+rows+'</ol>';
 }
-function campoCurso(pre,g,draft){
+function campoCurso(pre,g,draft,fp){fp=fp||pre;
   var cs=cursosDe(g);if(draft.c&&draft.c!=='__otro'&&cs.indexOf(draft.c)<0)cs=cs.concat([draft.c]).sort(cmp);
-  return '<div class="campo"><label for="'+pre+'-c">Curso</label><select id="'+pre+'-c" data-f="'+pre+'.c"><option value="">Elige el curso</option>'+
+  return '<div class="campo"><label for="'+pre+'-c">Curso</label><select id="'+pre+'-c" data-f="'+fp+'.c"><option value="">Elige el curso</option>'+
     cs.map(function(c){return '<option value="'+esc(c)+'"'+(!draft.otro&&draft.c===c?' selected':'')+'>'+esc(c)+'</option>';}).join('')+
     '<option value="__otro"'+(draft.otro?' selected':'')+'>Otro curso…</option></select>'+
-    (draft.otro?'<input type="text" id="'+pre+'-co" data-f="'+pre+'.cOtro" value="'+esc(draft.cOtro||'')+'" placeholder="Ej.: 4° C" aria-label="Nombre del curso">':'')+'</div>';
+    (draft.otro?'<input type="text" id="'+pre+'-co" data-f="'+fp+'.cOtro" value="'+esc(draft.cOtro||'')+'" placeholder="Ej.: 4° C" aria-label="Nombre del curso">':'')+'</div>';
 }
 function cursoDeDraft(d){return normCurso(d.otro?d.cOtro:d.c);}
+/* Agregar estudiantes: si llegan varios a la vez, se llenan varias filas y se agregan todos con un solo toque.
+   Cada fila parte vacía, también el curso: se elige a mano para no asignar a nadie a un curso equivocado.
+   La primera fila conserva los id de siempre (ne-ap, ne-n…); las siguientes son ne1-ap, ne2-ap… */
+var MAX_NUEVOS=8;
+function filaNueva(){return {ap:'',am:'',n:'',c:'',otro:false,cOtro:''};}
+function idFila(i){return i?'ne'+i:'ne';}
+function filaVacia(f){return !f.ap.trim()&&!f.am.trim()&&!f.n.trim();}
+function vNuevosEst(g,ne){var fs=ne.filas,varias=fs.length>1;
+  var h='<form class="panel" data-form="nuevo-est"><h3>Agregar estudiantes</h3>'+(ui.neError?'<p class="form-error" role="alert">'+esc(ui.neError)+'</p>':'');
+  fs.forEach(function(f,i){var id=idFila(i),fp='ne.'+i;
+    var campos='<div class="fila-2"><div class="campo"><label for="'+id+'-ap">Apellido paterno</label><input type="text" id="'+id+'-ap" data-f="'+fp+'.ap" value="'+esc(f.ap)+'" autocomplete="off"></div><div class="campo"><label for="'+id+'-am">Apellido materno</label><input type="text" id="'+id+'-am" data-f="'+fp+'.am" value="'+esc(f.am)+'" autocomplete="off"></div></div>'+
+      '<div class="campo"><label for="'+id+'-n">Nombres</label><input type="text" id="'+id+'-n" data-f="'+fp+'.n" value="'+esc(f.n)+'" autocomplete="off"></div>'+campoCurso(id,g,f,fp);
+    h+=varias?'<fieldset class="ne-fila" id="'+id+'-fila"><legend>Estudiante '+(i+1)+'</legend>'+campos+'<div><button type="button" class="btn quiet" data-a="ne-quitar" data-i="'+i+'">Quitar esta fila</button></div></fieldset>':campos;});
+  var n=fs.length;
+  h+='<div class="acciones">'+(n<MAX_NUEVOS?'<button type="button" class="btn" data-a="ne-fila">+ Otro estudiante</button>':'')+'<button type="submit" class="btn primary">'+(varias?'Agregar los '+n+' a la lista':'Agregar a la lista')+'</button></div>'+
+    '<p class="ayuda">Si llegan varios, toca «+ Otro estudiante» por cada uno y agrégalos todos juntos. Quedan ordenados con su curso y por apellido paterno.</p></form>';
+  return h;}
 function vFicha(g,e){
   var f=ui.fecha,s=statsEst(g,e.id),att=(g.asistencia[f]||{})[e.id]||null,obs=(g.notas[f]||{})[e.id]||'';
   if(!ui.estDraft||ui.estDraft.sid!==e.id)ui.estDraft={sid:e.id,ap:e.ap,am:e.am,n:e.n,c:e.c,otro:false,cOtro:''};
@@ -250,14 +267,11 @@ function vFormCursoNuevo(){
 }
 function vCurso(g){
   if(!ui.cursoDatos||ui.cursoDatos.id!==g.id)ui.cursoDatos={id:g.id,asignatura:g.asignatura,grupo:g.grupo,nivel:g.nivel,profesor:g.profesor||''};
-  if(!ui.nuevoEst){var cs1=cursosDe(g);ui.nuevoEst={ap:'',am:'',n:'',c:cs1.length===1?cs1[0]:'',otro:false,cOtro:''};}
+  if(!ui.nuevoEst||!ui.nuevoEst.filas)ui.nuevoEst={filas:[filaNueva()]};
   var cd=ui.cursoDatos,ne=ui.nuevoEst;
   var h=vPdfPend()+(ui.cursoForm?vFormCursoNuevo():'')+'<div class="dos-col"><div class="seccion">';
-  h+='<form class="panel" data-form="nuevo-est"><h3>Agregar estudiante</h3>'+
-    '<div class="fila-2"><div class="campo"><label for="ne-ap">Apellido paterno</label><input type="text" id="ne-ap" data-f="ne.ap" value="'+esc(ne.ap)+'" autocomplete="off"></div><div class="campo"><label for="ne-am">Apellido materno</label><input type="text" id="ne-am" data-f="ne.am" value="'+esc(ne.am)+'" autocomplete="off"></div></div>'+
-    '<div class="campo"><label for="ne-n">Nombres</label><input type="text" id="ne-n" data-f="ne.n" value="'+esc(ne.n)+'" autocomplete="off"></div>'+campoCurso('ne',g,ne)+
-    '<button type="submit" class="btn primary">Agregar a la lista</button><p class="ayuda">Queda ordenado con su curso y por apellido paterno.</p></form>';
-  h+='<div class="panel"><h3>Cursos</h3><div class="acciones"><button type="button" class="btn" data-a="curso-nuevo">+ Nuevo curso</button><label class="btn" for="pdf-curso">Importar nómina en PDF</label><input type="file" id="pdf-curso" class="oculto" data-file="pdf" accept=".pdf,application/pdf"></div>'+
+  h+=vNuevosEst(g,ne);
+  h+='<div class="panel"><h3>Cursos</h3><div class="acciones"><label class="btn" for="pdf-curso">Importar nómina en PDF</label><input type="file" id="pdf-curso" class="oculto" data-file="pdf" accept=".pdf,application/pdf"></div>'+
     (ui.confCurso===g.id?vConfCurso(g):'<div class="acciones"><button type="button" class="btn quiet" data-a="curso-borrar">Eliminar este curso y todos sus datos</button></div>')+'</div>';
   h+='</div><div class="seccion">';
   h+='<form class="panel" data-form="curso-datos"><h3>Datos del curso</h3>'+vError()+
