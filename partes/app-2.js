@@ -31,11 +31,10 @@ function vCab(){
 /* =================== Vista: Hoy =================== */
 function vBienvenida(){
   var loc=asistenciaLocal();
-  return '<div class="panel"><h3>Trae tus cursos para empezar</h3><p>Tu agenda todavía no tiene cursos. Puedes traer todo lo que tienes en Control de Asistencia: cursos, nóminas, asistencia, observaciones, notas y registros de clase.</p><div class="acciones">'+
+  return '<div class="panel"><h3>Trae tus cursos para empezar</h3><p>Tu agenda todavía no tiene cursos. Importa la nómina en PDF o restaura un archivo de respaldo.</p><div class="acciones">'+
     (loc?'<button type="button" class="btn primary" data-a="imp-local">Traer '+loc.length+(loc.length===1?' curso guardado':' cursos guardados')+' en esta tableta</button>':'')+
-    '<button type="button" class="btn'+(loc?'':' primary')+'" data-a="ir-cuenta">Desde mi cuenta de Control de Asistencia</button>'+
-    '<label class="btn" for="arch-bienv">Desde un archivo de respaldo</label><input type="file" id="arch-bienv" class="oculto" data-file="respaldo" accept=".json,application/json">'+
-    '</div><p class="ayuda">¿Un curso nuevo? <label class="link" for="pdf-bienv">Importa la nómina en PDF</label><input type="file" id="pdf-bienv" class="oculto" data-file="pdf" accept=".pdf,application/pdf">.</p></div>';
+    '<label class="btn'+(loc?'':' primary')+'" for="pdf-bienv">Importar nómina en PDF</label><input type="file" id="pdf-bienv" class="oculto" data-file="pdf" accept=".pdf,application/pdf"><label class="btn" for="arch-bienv">Desde un archivo de respaldo</label><input type="file" id="arch-bienv" class="oculto" data-file="respaldo" accept=".json,application/json">'+
+    '</div><p class="ayuda">Todo queda solo en esta tableta: la agenda no usa ninguna cuenta ni servidor.</p></div>';
 }
 function progresoDis(d){var r=S.rubricas[d.rubricaId];var g=grupoPorId(d.grupoId);if(!r||!g)return {listos:0,total:d.equipos.length};return {listos:d.equipos.filter(function(eq){return equipoListo(d,r,eq);}).length,total:d.equipos.length};}
 function vHoyDis(){
