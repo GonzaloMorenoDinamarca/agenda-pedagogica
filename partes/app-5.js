@@ -172,26 +172,6 @@ function aplicarImport(p){
   ui.importPend=null;
 }
 function respaldoJSON(){return JSON.stringify({app:APP,version:1,exportado:ahora(),datos:S});}
-function traerDeCuenta(email,pass){
-  ui.cuenta.cargando=true;ui.cuenta.error=null;render();
-  var tok,uidU;
-  fetch(SB_URL+'/auth/v1/token?grant_type=password',{method:'POST',headers:{'apikey':SB_KEY,'Content-Type':'application/json'},body:JSON.stringify({email:email,password:pass})})
-  .then(function(r){return r.json().catch(function(){return {};}).then(function(j){
-    if(!r.ok){var t=String(j.error_description||j.msg||j.error_code||j.error||'');throw {msg:/confirm/i.test(t)?'Debes confirmar tu correo antes de entrar.':(/invalid/i.test(t)||r.status===400)?'Correo o contraseña incorrectos.':'No se pudo entrar a tu cuenta ('+(t||r.status)+').'};}
-    tok=j.access_token;uidU=j.user&&j.user.id;if(!tok||!uidU)throw {msg:'Tu cuenta respondió sin sesión. Inténtalo de nuevo.'};
-    return fetch(SB_URL+'/rest/v1/app_data?select=state,updated_at&id=eq.'+encodeURIComponent(uidU),{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+tok}});
-  });})
-  .then(function(r){return r.json().then(function(rows){
-    if(!r.ok)throw {msg:'No se pudieron leer tus datos ('+r.status+').'};
-    if(!Array.isArray(rows)||!rows.length||!rows[0].state||!Array.isArray(rows[0].state.groups))throw {msg:'Tu cuenta no tiene cursos guardados.'};
-    var gs=rows[0].state.groups.filter(validoGrupo);if(!gs.length)throw {msg:'Tu cuenta no tiene cursos guardados.'};
-    ui.importPend={tipo:'asistencia',grupos:gs,exportado:rows[0].updated_at,origen:'tu cuenta de Control de Asistencia'};
-    ui.cuenta.cargando=false;flash('Leí tu cuenta. Revisa el resumen y confirma.');
-    if(!S.grupos.length){aplicarImport(ui.importPend);irA('hoy');return;}
-    ui.tab='respaldo';render();var el=document.querySelector('.confirmar');if(el)el.scrollIntoView();
-  });})
-  .catch(function(e){ui.cuenta.cargando=false;ui.cuenta.error=e&&e.msg?e.msg:(navigator.onLine?'No se pudo conectar con tu cuenta. Inténtalo de nuevo en un momento.':'Sin conexión. Conéctate a internet para traer tus datos (solo esta vez).');render();});
-}
 
 /* =================== Acciones =================== */
 var A={
@@ -204,7 +184,6 @@ var A={
   /* Hoy */
   'ir-lista':function(el){ui.confLog=null;ui.grupoId=el.dataset.id;ui.fecha=hoyISO();ui.aVista='lista';ui.ficha=null;ui.regAbierto=false;irA('asistencia');},
   'ir-stats':function(el){ui.grupoId=el.dataset.id;ui.aVista='stats';ui.ficha=null;irA('asistencia');},
-  'ir-cuenta':function(){irA('respaldo');setTimeout(function(){var b=document.getElementById('bloque-cuenta');if(b)b.scrollIntoView();foco('cu-email');},0);},
   'imp-local':function(){var gs=asistenciaLocal();if(!gs)return;var p={tipo:'asistencia',grupos:gs,origen:'Control de Asistencia en esta tableta'};if(!S.grupos.length){aplicarImport(p);irA('hoy');}else{ui.importPend=p;irA('respaldo');}},
   'imp-libreta':function(){var l=libretaLocal();if(!l)return;ui.importPend={tipo:'libreta',equipos:l.equipos,bitacora:l.bitacora||{}};render();},
   'd-abrir':function(el){var d=S.disertaciones[el.dataset.id];if(!d)return;ui.dId=el.dataset.id;var pr=progresoDis(d);ui.dVista=pr.total&&pr.listos===pr.total?'resumen':(pr.total?'evaluar':'config');ui.dEq=0;irA('disertaciones');},
