@@ -7,8 +7,6 @@
 /* =================== Constantes =================== */
 var APP='agenda-pedagogica';
 var LS_DATOS=APP+':datos', LS_UI=APP+':ui';
-var SB_URL='https://zeeifjoiqlotltsckfii.supabase.co';
-var SB_KEY='sb_publishable_LT1f75UiZEoR_Fv8xVIK-w_n_dB6FKf';
 var PDFJS='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
 var ETAPAS=['Investigación','Diseño','Prototipo','Pruebas','Presentación'];
 var ESTADOS=[{k:'ok',t:'Al día',g:'✓'},{k:'atencion',t:'Requiere atención',g:'!'},{k:'riesgo',t:'En riesgo',g:'✕'}];
@@ -230,7 +228,7 @@ var ui={tab:'hoy',msg:null,undo:null,copiaManual:null,formError:null,actualizaci
   cNivel:'',cGrupo:'',cBuscar:'',cDest:false,cPag:0,cEdit:null,cNuevo:null,
   dVista:'lista',dId:null,dEq:0,dEqActivo:null,dTam:3,dForm:null,rId:null,rDraft:null,
   teamId:null,teamMode:'ver',teamDraft:null,entryOpen:false,entryDraft:null,editingEntry:null,entryPage:0,
-  importPend:null,cuenta:{email:'',cargando:false,error:null}};
+  importPend:null};
 var crono={inicio:null,acumulado:0,intervalo:null,eqId:null};
 var swListo=false, persistente=null;
 function guardarUI(){try{localStorage.setItem(LS_UI,JSON.stringify({tab:ui.tab,grupoId:ui.grupoId,aVista:ui.aVista,soloApellido:ui.soloApellido,nSel:ui.nSel,nCurso:ui.nCurso,dId:ui.dId,dVista:ui.dVista,dEq:ui.dEq,teamId:ui.teamId}));}catch(e){}}
