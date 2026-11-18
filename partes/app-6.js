@@ -137,9 +137,7 @@ var ENVIOS={
     var t=equipoActual();if(!t)return;
     if(ui.editingEntry&&S.bitacora[ui.editingEntry]){var b=S.bitacora[ui.editingEntry];b.fecha=d.fecha||hoyISO();b.avance=av;b.proximos=pr;b.apoyo=ap;b.actualizado=ahora();}
     else{S.bitacora[uid()]={equipoId:t.id,fecha:d.fecha||hoyISO(),avance:av,proximos:pr,apoyo:ap,etapa:t.etapa||null,estado:t.estado||null,creado:ahora()};ui.entryPage=0;}
-    guardar();ui.entryOpen=false;ui.entryDraft=null;ui.editingEntry=null;ui.formError=null;flash('Registro guardado.');render();},
-  'cuenta':function(){var em=(document.getElementById('cu-email')||{}).value||'',pw=(document.getElementById('cu-pass')||{}).value||'';ui.cuenta.email=em.trim();
-    if(!ui.cuenta.email||!pw){ui.cuenta.error='Escribe tu correo y tu contraseña.';render();return;}traerDeCuenta(ui.cuenta.email,pw);}
+    guardar();ui.entryOpen=false;ui.entryDraft=null;ui.editingEntry=null;ui.formError=null;flash('Registro guardado.');render();}
 };
 
 /* =================== Eventos =================== */
@@ -149,7 +147,7 @@ var tBuscar=null;
 var toque={el:null,t:0};
 document.addEventListener('pointerdown',function(e){toque.el=e.target;toque.t=Date.now();},true);
 document.addEventListener('focusin',function(e){var el=e.target;
-  if(!el||!(el.tagName==='TEXTAREA'||(el.tagName==='INPUT'&&/^(text|search|email|password|number)$/.test(el.type))))return;
+  if(!el||!(el.tagName==='TEXTAREA'||(el.tagName==='INPUT'&&/^(text|search|number)$/.test(el.type))))return;
   if(toque.el!==el||Date.now()-toque.t>1500)return;
   var r=el.getBoundingClientRect(),h=window.innerHeight;if(r.top>=h*0.08&&r.bottom<=h*0.45)return;
   window.scrollTo(0,Math.max(0,window.pageYOffset+r.top-h*0.15));});
@@ -192,7 +190,6 @@ document.addEventListener('input',function(e){
       var t=document.getElementById('r-total');if(t)t.textContent=escalaTexto(r);return;
     case 'team':if(ui.teamDraft)ui.teamDraft[p[1]]=v;return;
     case 'entry':if(ui.entryDraft)ui.entryDraft[p[1]]=v;return;
-    case 'cuenta':ui.cuenta.email=v;return;
   }
 });
 document.addEventListener('change',function(e){
